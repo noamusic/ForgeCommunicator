@@ -351,7 +351,7 @@
                         </button>
                     </div>
                 `;
-                window.showToast(toastHtml, 'info', 10000);
+                window.showToast(toastHtml, 'info', 10000, true);
             } else {
                 if (confirm(`New version ${versionInfo.version} available. Reload to update?`)) {
                     this.clearCacheAndReload();
@@ -716,7 +716,7 @@
     };
 
     // Toast notifications
-    window.showToast = function(message, type = 'info') {
+    window.showToast = function(message, type = 'info', duration = 3000, isHtml = false) {
         const container = document.getElementById('toast-container');
         if (!container) return;
 
@@ -729,7 +729,14 @@
 
         const toast = document.createElement('div');
         toast.className = `${colors[type]} text-white px-4 py-2 rounded-lg shadow-lg transform transition-all duration-300 translate-y-2 opacity-0`;
-        toast.textContent = message;
+        
+        // Support both plain text and HTML content
+        if (isHtml) {
+            toast.innerHTML = message;
+        } else {
+            toast.textContent = message;
+        }
+        
         container.appendChild(toast);
 
         // Animate in
@@ -737,11 +744,11 @@
             toast.classList.remove('translate-y-2', 'opacity-0');
         });
 
-        // Remove after 3 seconds
+        // Remove after duration
         setTimeout(() => {
             toast.classList.add('translate-y-2', 'opacity-0');
             setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        }, duration);
     };
 
     // HTMX event listeners

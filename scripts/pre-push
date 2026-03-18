@@ -1,0 +1,33 @@
+#!/bin/bash
+# Pre-push hook to validate schema before pushing
+# Install: cp scripts/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+
+echo "🔍 Running schema validation..."
+
+# Check if we're pushing to main/production branches
+protected_branches=("main" "master" "production")
+current_branch=$(git symbolic-ref HEAD 2>/dev/null | sed -e 's,.*/\(.*\),\1,')
+
+for branch in "${protected_branches[@]}"; do
+    if [[ "$current_branch" == "$branch" ]]; then
+        echo "Pushing to protected branch: $branch"
+        
+        # Run schema validation
+        python scripts/validate_schema.py
+        
+        if [ $? -ne 0 ]; then
+            echo ""
+            echo "❌ Schema validation failed!"
+            echo "Please fix schema issues before pushing to $branch"
+            echo ""
+            echo "Quick fix: run 'alembic upgrade head' on a test database"
+            echo "Then check if you need to create a new migration."
+            exit 1
+        fi
+        
+        echo "✅ Schema validation passed"
+        break
+    fi
+done
+
+exit 0
