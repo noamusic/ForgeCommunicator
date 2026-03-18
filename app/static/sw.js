@@ -15,7 +15,7 @@ const STATIC_ASSETS = [
     '/static/chirp.mp3',
     '/static/favicon.svg',
     '/static/forge-logo.png',
-    '/static/manifest.json',
+    '/manifest.json',
     '/auth/login'
 ];
 

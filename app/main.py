@@ -161,6 +161,56 @@ async def service_worker():
     )
 
 
+# PWA Manifest - dynamic with branding
+@app.get("/manifest.json", tags=["pwa"])
+async def pwa_manifest():
+    """Serve PWA manifest with dynamic branding."""
+    from fastapi.responses import JSONResponse
+    from app.brand import get_brand_context
+    
+    brand = get_brand_context()
+    
+    manifest = {
+        "name": brand.full_name,  # e.g., "Buildly Communicator"
+        "short_name": brand.name,  # e.g., "Communicator"
+        "description": f"{brand.company} team communication platform",
+        "id": "/workspaces",
+        "start_url": "/workspaces",
+        "scope": "/",
+        "display": "standalone",
+        "display_override": ["standalone", "minimal-ui"],
+        "background_color": "#0f172a",
+        "theme_color": brand.primary_color or "#3b82f6",
+        "orientation": "any",
+        "icons": [
+            {"src": "/static/icons/icon-180x180.png", "sizes": "180x180", "type": "image/png", "purpose": "any"},
+            {"src": "/static/icons/icon-72x72.png", "sizes": "72x72", "type": "image/png", "purpose": "any maskable"},
+            {"src": "/static/icons/icon-96x96.png", "sizes": "96x96", "type": "image/png", "purpose": "any maskable"},
+            {"src": "/static/icons/icon-128x128.png", "sizes": "128x128", "type": "image/png", "purpose": "any maskable"},
+            {"src": "/static/icons/icon-144x144.png", "sizes": "144x144", "type": "image/png", "purpose": "any maskable"},
+            {"src": "/static/icons/icon-152x152.png", "sizes": "152x152", "type": "image/png", "purpose": "any maskable"},
+            {"src": "/static/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+            {"src": "/static/icons/icon-384x384.png", "sizes": "384x384", "type": "image/png", "purpose": "any maskable"},
+            {"src": "/static/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+        ],
+        "screenshots": [
+            {"src": "/static/screenshots/mobile.png", "sizes": "390x844", "type": "image/png", "form_factor": "narrow"},
+            {"src": "/static/screenshots/desktop.png", "sizes": "1920x1080", "type": "image/png", "form_factor": "wide"},
+        ],
+        "categories": ["business", "productivity", "social"],
+        "prefer_related_applications": False,
+        "shortcuts": [
+            {"name": "Workspaces", "short_name": "Workspaces", "url": "/workspaces", "icons": [{"src": "/static/icons/icon-96x96.png", "sizes": "96x96"}]},
+            {"name": "Profile", "short_name": "Profile", "url": "/profile", "icons": [{"src": "/static/icons/icon-96x96.png", "sizes": "96x96"}]},
+        ],
+    }
+    
+    return JSONResponse(
+        content=manifest,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
 # Offline page for PWA
 @app.get("/offline", response_class=HTMLResponse)
 async def offline_page(request: Request):
