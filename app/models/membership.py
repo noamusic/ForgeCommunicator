@@ -57,6 +57,13 @@ class ChannelMembership(Base, TimestampMixin):
     
     # Last read tracking
     last_read_message_id: Mapped[int | None] = mapped_column(nullable=True)
+    
+    # Relationships
+    channel = relationship("Channel", back_populates="memberships")
+    user = relationship("User")
+    
+    def __repr__(self) -> str:
+        return f"<ChannelMembership user={self.user_id} channel={self.channel_id}>"
 
 
 class ThreadReadState(Base, TimestampMixin):
@@ -72,9 +79,5 @@ class ThreadReadState(Base, TimestampMixin):
     parent_message_id: Mapped[int] = mapped_column(ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
     last_read_reply_id: Mapped[int | None] = mapped_column(nullable=True)  # Last reply the user has seen
     
-    # Relationships
-    channel = relationship("Channel", back_populates="memberships")
-    user = relationship("User")
-    
     def __repr__(self) -> str:
-        return f"<ChannelMembership user={self.user_id} channel={self.channel_id}>"
+        return f"<ThreadReadState user={self.user_id} parent={self.parent_message_id}>"
