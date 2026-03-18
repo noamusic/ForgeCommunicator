@@ -23,6 +23,12 @@
                     </a>
                     {% endif %}
                     <a href="/profile" class="text-sm text-gray-300 hover:text-white">{{ user.display_name }}</a>
+                    <button onclick="openHelpModal()" class="text-sm text-gray-400 hover:text-gray-200 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Help
+                    </button>
                     <a href="/auth/logout" class="text-sm text-gray-400 hover:text-gray-200">Sign out</a>
                 </div>
             </div>
@@ -41,172 +47,6 @@
                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/25 transition-all">
                     Create Workspace
                 </a>
-            </div>
-        </div>
-        
-        <!-- Getting Started Guide -->
-        <div id="getting-started-guide" class="mb-8 glass-dark rounded-xl border border-white/10 overflow-hidden">
-            <button onclick="toggleGuide()" class="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">🚀</span>
-                    <div class="text-left">
-                        <h2 class="text-lg font-semibold text-white">Getting Started Guide</h2>
-                        <p class="text-sm text-gray-400">Learn how to install the app, enable notifications, and more</p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="event.stopPropagation(); dismissGuide()" class="text-gray-500 hover:text-gray-300 p-1" title="Dismiss forever">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                    <svg id="guide-chevron" class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </div>
-            </button>
-            
-            <div id="guide-content" class="hidden border-t border-white/10">
-                <!-- Install PWA Section -->
-                <div class="p-6 border-b border-white/10">
-                    <div class="flex items-start gap-4">
-                        <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0 border border-blue-500/30">
-                            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-md font-semibold text-white mb-2">Install the App</h3>
-                            <p class="text-sm text-gray-400 mb-3">Install {{ brand.name }} as an app for the best experience with offline support and quick access.</p>
-                            
-                            <div class="space-y-3 text-sm">
-                                <div class="glass p-3 rounded-lg">
-                                    <p class="text-blue-400 font-medium mb-1">📱 iPhone/iPad (Safari)</p>
-                                    <ol class="text-gray-300 space-y-1 ml-4 list-decimal">
-                                        <li>Tap the <strong>Share</strong> button (square with arrow)</li>
-                                        <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
-                                        <li>Tap <strong>"Add"</strong> to confirm</li>
-                                    </ol>
-                                </div>
-                                
-                                <div class="glass p-3 rounded-lg">
-                                    <p class="text-green-400 font-medium mb-1">🤖 Android (Chrome)</p>
-                                    <ol class="text-gray-300 space-y-1 ml-4 list-decimal">
-                                        <li>Tap the <strong>menu</strong> (three dots)</li>
-                                        <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
-                                        <li>Tap <strong>"Install"</strong> to confirm</li>
-                                    </ol>
-                                </div>
-                                
-                                <div class="glass p-3 rounded-lg">
-                                    <p class="text-purple-400 font-medium mb-1">💻 Desktop (Chrome/Edge)</p>
-                                    <ol class="text-gray-300 space-y-1 ml-4 list-decimal">
-                                        <li>Look for the <strong>install icon</strong> in the address bar (or menu)</li>
-                                        <li>Click <strong>"Install"</strong></li>
-                                    </ol>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Notifications Section -->
-                <div class="p-6 border-b border-white/10">
-                    <div class="flex items-start gap-4">
-                        <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0 border border-green-500/30">
-                            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-md font-semibold text-white mb-2">Enable Notifications</h3>
-                            <p class="text-sm text-gray-400 mb-3">Get notified when someone messages you, even when the app is closed.</p>
-                            
-                            <div class="space-y-3 text-sm">
-                                <div class="flex items-center gap-3">
-                                    <button onclick="requestNotificationPermission()" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors">
-                                        Enable Notifications
-                                    </button>
-                                    <span id="notification-status" class="text-gray-400"></span>
-                                </div>
-                                
-                                <div class="glass p-3 rounded-lg">
-                                    <p class="text-yellow-400 font-medium mb-2">⚠️ Troubleshooting</p>
-                                    <ul class="text-gray-300 space-y-2">
-                                        <li><strong>Notifications not working?</strong>
-                                            <ul class="ml-4 mt-1 text-gray-400 space-y-1">
-                                                <li>• Check your device's notification settings for this app/browser</li>
-                                                <li>• On iPhone: Settings → Notifications → Safari (or app name)</li>
-                                                <li>• On Android: Settings → Apps → Chrome → Notifications</li>
-                                                <li>• Make sure "Do Not Disturb" is off</li>
-                                            </ul>
-                                        </li>
-                                        <li><strong>Blocked notifications?</strong>
-                                            <ul class="ml-4 mt-1 text-gray-400 space-y-1">
-                                                <li>• Click the lock/info icon in your browser's address bar</li>
-                                                <li>• Find "Notifications" and change to "Allow"</li>
-                                                <li>• Refresh the page</li>
-                                            </ul>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Workspaces Section -->
-                <div class="p-6">
-                    <div class="flex items-start gap-4">
-                        <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0 border border-purple-500/30">
-                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-md font-semibold text-white mb-2">Create & Share Workspaces</h3>
-                            <p class="text-sm text-gray-400 mb-3">Workspaces are shared spaces for your team, project, or community.</p>
-                            
-                            <div class="grid md:grid-cols-2 gap-3 text-sm">
-                                <div class="glass p-3 rounded-lg">
-                                    <p class="text-blue-400 font-medium mb-2">📝 Create a Workspace</p>
-                                    <ol class="text-gray-300 space-y-1 ml-4 list-decimal">
-                                        <li>Click <strong>"Create Workspace"</strong> above</li>
-                                        <li>Enter a name and optional description</li>
-                                        <li>A #general channel is created automatically</li>
-                                    </ol>
-                                </div>
-                                
-                                <div class="glass p-3 rounded-lg">
-                                    <p class="text-green-400 font-medium mb-2">🔗 Invite People</p>
-                                    <ol class="text-gray-300 space-y-1 ml-4 list-decimal">
-                                        <li>Open a workspace, go to <strong>Settings</strong></li>
-                                        <li>Find the <strong>Invite Link</strong> section</li>
-                                        <li>Copy and share the link with your team</li>
-                                    </ol>
-                                </div>
-                                
-                                <div class="glass p-3 rounded-lg">
-                                    <p class="text-purple-400 font-medium mb-2">🚪 Join a Workspace</p>
-                                    <ol class="text-gray-300 space-y-1 ml-4 list-decimal">
-                                        <li>Click <strong>"Join Workspace"</strong> above</li>
-                                        <li>Enter the invite code you received</li>
-                                        <li>Or use a direct invite link</li>
-                                    </ol>
-                                </div>
-                                
-                                <div class="glass p-3 rounded-lg">
-                                    <p class="text-yellow-400 font-medium mb-2">💡 Tips</p>
-                                    <ul class="text-gray-300 space-y-1">
-                                        <li>• Create channels for different topics</li>
-                                        <li>• Use DMs for private conversations</li>
-                                        <li>• @ mention people to notify them</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
         
@@ -280,116 +120,217 @@
     </div>
 </div>
 
-<script>
-// Getting Started Guide functionality
-const GUIDE_DISMISSED_KEY = 'forge_guide_dismissed';
-const GUIDE_COLLAPSED_KEY = 'forge_guide_collapsed';
-
-function initGuide() {
-    const guide = document.getElementById('getting-started-guide');
-    if (!guide) return;
-    
-    // Check if dismissed permanently
-    if (localStorage.getItem(GUIDE_DISMISSED_KEY) === 'true') {
-        guide.style.display = 'none';
-        return;
-    }
-    
-    // Check if collapsed
-    const isCollapsed = localStorage.getItem(GUIDE_COLLAPSED_KEY) !== 'false';
-    if (!isCollapsed) {
-        document.getElementById('guide-content').classList.remove('hidden');
-        document.getElementById('guide-chevron').classList.add('rotate-180');
-    }
-    
-    // Update notification status
-    updateNotificationStatus();
-}
-
-function toggleGuide() {
-    const content = document.getElementById('guide-content');
-    const chevron = document.getElementById('guide-chevron');
-    
-    content.classList.toggle('hidden');
-    chevron.classList.toggle('rotate-180');
-    
-    // Save state
-    const isCollapsed = content.classList.contains('hidden');
-    localStorage.setItem(GUIDE_COLLAPSED_KEY, isCollapsed ? 'true' : 'false');
-}
-
-function dismissGuide() {
-    if (confirm('Hide the Getting Started guide? You can always find help in Settings.')) {
-        localStorage.setItem(GUIDE_DISMISSED_KEY, 'true');
-        document.getElementById('getting-started-guide').style.display = 'none';
-    }
-}
-
-function updateNotificationStatus() {
-    const statusEl = document.getElementById('notification-status');
-    if (!statusEl) return;
-    
-    if (!('Notification' in window)) {
-        statusEl.textContent = '❌ Not supported in this browser';
-        statusEl.className = 'text-red-400';
-    } else if (Notification.permission === 'granted') {
-        statusEl.textContent = '✅ Enabled';
-        statusEl.className = 'text-green-400';
-    } else if (Notification.permission === 'denied') {
-        statusEl.textContent = '🚫 Blocked - check browser settings';
-        statusEl.className = 'text-red-400';
-    } else {
-        statusEl.textContent = '⏳ Not yet enabled';
-        statusEl.className = 'text-yellow-400';
-    }
-}
-
-async function requestNotificationPermission() {
-    if (!('Notification' in window)) {
-        alert('Notifications are not supported in this browser.');
-        return;
-    }
-    
-    try {
-        const permission = await Notification.requestPermission();
-        updateNotificationStatus();
+<!-- Help Modal -->
+<div id="help-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <!-- Background overlay -->
+        <div onclick="closeHelpModal()" class="fixed inset-0 bg-black/70 transition-opacity"></div>
         
-        if (permission === 'granted') {
-            // Register for push notifications if available
-            if ('serviceWorker' in navigator && 'PushManager' in window) {
-                try {
-                    const registration = await navigator.serviceWorker.ready;
-                    // Try to subscribe (this will use the app's VAPID key)
-                    const response = await fetch('/push/vapid-public-key');
-                    if (response.ok) {
-                        const { publicKey } = await response.json();
-                        const subscription = await registration.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: urlBase64ToUint8Array(publicKey)
-                        });
-                        
-                        // Send subscription to server
-                        await fetch('/push/subscribe', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(subscription)
-                        });
-                    }
-                } catch (pushErr) {
-                    console.log('Push subscription failed (may need HTTPS):', pushErr);
-                }
-            }
+        <!-- Modal panel -->
+        <div class="relative glass-dark rounded-xl border border-white/10 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-2xl sm:w-full max-h-[85vh] overflow-y-auto">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-white/10 flex items-center justify-between sticky top-0 glass-dark z-10">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🚀</span>
+                    <h2 class="text-lg font-semibold text-white">Getting Started</h2>
+                </div>
+                <button onclick="closeHelpModal()" class="text-gray-400 hover:text-white p-1">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
             
-            // Show a test notification
-            new Notification('Notifications enabled!', {
-                body: 'You\'ll now receive notifications for new messages.',
-                icon: '/static/icons/icon-192.png'
-            });
-        }
-    } catch (err) {
-        console.error('Failed to request notification permission:', err);
-        alert('Failed to enable notifications. Please check your browser settings.');
+            <!-- Install PWA Section -->
+            <div class="p-6 border-b border-white/10">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0 border border-blue-500/30">
+                        <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-md font-semibold text-white mb-2">Install the App</h3>
+                        <p class="text-sm text-gray-400 mb-3">Install {{ brand.name }} as an app for the best experience with offline support and quick access.</p>
+                        
+                        <div class="space-y-3 text-sm">
+                            <div class="glass p-3 rounded-lg">
+                                <p class="text-blue-400 font-medium mb-1">📱 iPhone/iPad (Safari)</p>
+                                <ol class="text-gray-300 space-y-1 ml-4 list-decimal">
+                                    <li>Tap the <strong>Share</strong> button (square with arrow)</li>
+                                    <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+                                    <li>Tap <strong>"Add"</strong> to confirm</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="glass p-3 rounded-lg">
+                                <p class="text-green-400 font-medium mb-1">🤖 Android (Chrome)</p>
+                                <ol class="text-gray-300 space-y-1 ml-4 list-decimal">
+                                    <li>Tap the <strong>menu</strong> (three dots)</li>
+                                    <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></li>
+                                    <li>Tap <strong>"Install"</strong> to confirm</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="glass p-3 rounded-lg">
+                                <p class="text-purple-400 font-medium mb-1">💻 Desktop (Chrome/Edge)</p>
+                                <ol class="text-gray-300 space-y-1 ml-4 list-decimal">
+                                    <li>Look for the <strong>install icon</strong> in the address bar (or menu)</li>
+                                    <li>Click <strong>"Install"</strong></li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notifications Section -->
+            <div class="p-6 border-b border-white/10">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0 border border-green-500/30">
+                        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-md font-semibold text-white mb-2">Enable Notifications</h3>
+                        <p class="text-sm text-gray-400 mb-3">Get notified when someone messages you, even when the app is closed.</p>
+                        
+                        <div class="space-y-3 text-sm">
+                            <div id="notification-panel" class="glass p-4 rounded-lg">
+                                <div id="notification-checking" class="flex items-center gap-2">
+                                    <div class="animate-spin w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full"></div>
+                                    <span class="text-gray-300">Checking notification status...</span>
+                                </div>
+                                
+                                <div id="notification-status-panel" class="hidden">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center gap-2">
+                                            <span id="status-icon" class="text-xl">⏳</span>
+                                            <span id="status-text" class="font-medium text-white">Checking...</span>
+                                        </div>
+                                        <span id="platform-badge" class="text-xs px-2 py-1 bg-white/10 rounded text-gray-400"></span>
+                                    </div>
+                                    
+                                    <div id="diagnostic-details" class="text-xs text-gray-500 mb-3 space-y-1"></div>
+                                    <div id="action-buttons" class="flex flex-wrap gap-2"></div>
+                                    
+                                    <div id="platform-instructions" class="hidden mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                                        <p id="instruction-text" class="text-yellow-300 text-sm"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Workspaces Section -->
+            <div class="p-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0 border border-purple-500/30">
+                        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-md font-semibold text-white mb-2">Create & Share Workspaces</h3>
+                        <p class="text-sm text-gray-400 mb-3">Workspaces are shared spaces for your team, project, or community.</p>
+                        
+                        <div class="grid md:grid-cols-2 gap-3 text-sm">
+                            <div class="glass p-3 rounded-lg">
+                                <p class="text-blue-400 font-medium mb-2">📝 Create a Workspace</p>
+                                <ol class="text-gray-300 space-y-1 ml-4 list-decimal">
+                                    <li>Click <strong>"Create Workspace"</strong></li>
+                                    <li>Enter a name and optional description</li>
+                                    <li>A #general channel is created automatically</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="glass p-3 rounded-lg">
+                                <p class="text-green-400 font-medium mb-2">🔗 Invite People</p>
+                                <ol class="text-gray-300 space-y-1 ml-4 list-decimal">
+                                    <li>Open a workspace, go to <strong>Settings</strong></li>
+                                    <li>Find the <strong>Invite Link</strong> section</li>
+                                    <li>Copy and share the link</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="glass p-3 rounded-lg">
+                                <p class="text-purple-400 font-medium mb-2">🚪 Join a Workspace</p>
+                                <ol class="text-gray-300 space-y-1 ml-4 list-decimal">
+                                    <li>Click <strong>"Join Workspace"</strong></li>
+                                    <li>Enter the invite code you received</li>
+                                    <li>Or use a direct invite link</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="glass p-3 rounded-lg">
+                                <p class="text-yellow-400 font-medium mb-2">💡 Tips</p>
+                                <ul class="text-gray-300 space-y-1">
+                                    <li>• Create channels for different topics</li>
+                                    <li>• Use DMs for private conversations</li>
+                                    <li>• @ mention people to notify them</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================
+// HELP MODAL
+// ============================================
+
+function openHelpModal() {
+    const modal = document.getElementById('help-modal');
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    // Run notification diagnostic when modal opens
+    runNotificationDiagnostic();
+}
+
+function closeHelpModal() {
+    const modal = document.getElementById('help-modal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeHelpModal();
     }
+});
+
+// ============================================
+// NOTIFICATION SYSTEM
+// ============================================
+
+function detectPlatform() {
+    const ua = navigator.userAgent;
+    const platform = navigator.platform;
+    
+    if (/iPad|iPhone|iPod/.test(ua) || (platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+        return { name: 'iOS', icon: '📱', canOpenSettings: false };
+    }
+    if (/Android/.test(ua)) {
+        return { name: 'Android', icon: '🤖', canOpenSettings: true };
+    }
+    if (/Mac/.test(platform)) {
+        return { name: 'macOS', icon: '💻', canOpenSettings: true };
+    }
+    if (/Win/.test(platform)) {
+        return { name: 'Windows', icon: '🖥️', canOpenSettings: true };
+    }
+    if (/Linux/.test(platform)) {
+        return { name: 'Linux', icon: '🐧', canOpenSettings: false };
+    }
+    return { name: 'Unknown', icon: '❓', canOpenSettings: false };
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -403,7 +344,222 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', initGuide);
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function runNotificationDiagnostic() {
+    const checkingEl = document.getElementById('notification-checking');
+    const statusPanel = document.getElementById('notification-status-panel');
+    const platformBadge = document.getElementById('platform-badge');
+    const statusIcon = document.getElementById('status-icon');
+    const statusText = document.getElementById('status-text');
+    const diagnosticDetails = document.getElementById('diagnostic-details');
+    const actionButtons = document.getElementById('action-buttons');
+    const instructionsPanel = document.getElementById('platform-instructions');
+    const instructionText = document.getElementById('instruction-text');
+    
+    if (!checkingEl) return;
+    
+    const platform = detectPlatform();
+    platformBadge.textContent = `${platform.icon} ${platform.name}`;
+    
+    const diag = {
+        hasNotificationAPI: 'Notification' in window,
+        hasPushManager: 'PushManager' in window,
+        permission: 'Notification' in window ? Notification.permission : 'unsupported',
+        swRegistered: false,
+        pushSubscription: null,
+        serverSubscription: false
+    };
+    
+    if ('serviceWorker' in navigator) {
+        try {
+            const reg = await navigator.serviceWorker.getRegistration();
+            diag.swRegistered = !!reg;
+            if (reg && diag.hasPushManager) {
+                diag.pushSubscription = await reg.pushManager.getSubscription();
+            }
+        } catch (e) { console.log('SW check error:', e); }
+    }
+    
+    try {
+        const response = await fetch('/push/status');
+        if (response.ok) {
+            const data = await response.json();
+            diag.serverSubscription = data.subscriptions_count > 0;
+        }
+    } catch (e) { console.log('Server status check error:', e); }
+    
+    diagnosticDetails.innerHTML = `
+        <div class="grid grid-cols-2 gap-x-4">
+            <span>Browser Support:</span><span>${diag.hasNotificationAPI && diag.hasPushManager ? '✅' : '❌'}</span>
+            <span>Permission:</span><span>${diag.permission === 'granted' ? '✅ Granted' : diag.permission === 'denied' ? '🚫 Blocked' : '⏳ Not asked'}</span>
+            <span>Service Worker:</span><span>${diag.swRegistered ? '✅' : '❌'}</span>
+            <span>Push Subscription:</span><span>${diag.pushSubscription ? '✅' : '❌'}</span>
+            <span>Server Registered:</span><span>${diag.serverSubscription ? '✅' : '❌'}</span>
+        </div>
+    `;
+    
+    let actions = [];
+    let instruction = null;
+    
+    if (!diag.hasNotificationAPI || !diag.hasPushManager) {
+        statusIcon.textContent = '❌';
+        statusText.textContent = 'Notifications not supported';
+        statusText.className = 'font-medium text-red-400';
+        if (platform.name === 'iOS') {
+            instruction = '📱 On iPhone/iPad, add this app to your home screen first: tap Share → "Add to Home Screen". Then notifications will work!';
+        }
+    } else if (diag.permission === 'denied') {
+        statusIcon.textContent = '🚫';
+        statusText.textContent = 'Notifications Blocked';
+        statusText.className = 'font-medium text-red-400';
+        if (platform.name === 'iOS') {
+            instruction = '📱 Go to Settings → Safari → Notifications → Find this site → Allow';
+        } else if (platform.name === 'Android') {
+            instruction = '🤖 Tap the button below to open Chrome settings, then enable notifications for this site';
+            actions.push({ label: '⚙️ Open Settings', action: 'openAndroidSettings', primary: true });
+        } else {
+            instruction = '💻 Click the lock icon 🔒 in your browser address bar → Site Settings → Notifications → Allow';
+            actions.push({ label: '🔄 I Fixed It - Recheck', action: 'recheck', primary: true });
+        }
+    } else if (diag.permission === 'default') {
+        statusIcon.textContent = '⏳';
+        statusText.textContent = 'Notifications Not Enabled';
+        statusText.className = 'font-medium text-yellow-400';
+        actions.push({ label: '🔔 Enable Notifications', action: 'enable', primary: true });
+    } else if (diag.permission === 'granted') {
+        if (!diag.swRegistered || !diag.pushSubscription || !diag.serverSubscription) {
+            statusIcon.textContent = '⚠️';
+            statusText.textContent = 'Setup Incomplete';
+            statusText.className = 'font-medium text-yellow-400';
+            actions.push({ label: '🔧 Fix Setup', action: 'fixSetup', primary: true });
+        } else {
+            statusIcon.textContent = '✅';
+            statusText.textContent = 'Notifications Enabled';
+            statusText.className = 'font-medium text-green-400';
+            actions.push({ label: '📤 Send Test', action: 'test', primary: true });
+        }
+    }
+    
+    actionButtons.innerHTML = actions.map(a => `
+        <button onclick="handleNotificationAction('${a.action}')" 
+                class="px-4 py-2 ${a.primary ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-600 hover:bg-gray-500'} text-white text-sm font-medium rounded-lg transition-colors">
+            ${a.label}
+        </button>
+    `).join('');
+    
+    if (instruction) {
+        instructionText.textContent = instruction;
+        instructionsPanel.classList.remove('hidden');
+    } else {
+        instructionsPanel.classList.add('hidden');
+    }
+    
+    checkingEl.classList.add('hidden');
+    statusPanel.classList.remove('hidden');
+}
+
+async function handleNotificationAction(action) {
+    const statusText = document.getElementById('status-text');
+    
+    switch (action) {
+        case 'enable':
+            statusText.textContent = 'Requesting permission...';
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    await setupPushSubscription();
+                }
+            } catch (e) { console.error('Permission error:', e); }
+            runNotificationDiagnostic();
+            break;
+            
+        case 'fixSetup':
+            statusText.textContent = 'Fixing setup...';
+            try {
+                if ('serviceWorker' in navigator) {
+                    await navigator.serviceWorker.register('/static/sw.js');
+                    await navigator.serviceWorker.ready;
+                }
+                await setupPushSubscription();
+            } catch (e) { console.error('Setup error:', e); }
+            runNotificationDiagnostic();
+            break;
+            
+        case 'test':
+            statusText.textContent = 'Sending test...';
+            try {
+                const response = await fetch('/push/test', { method: 'POST' });
+                const data = await response.json();
+                if (data.status === 'sent') {
+                    statusText.textContent = '📬 Test sent! Check for notification';
+                    statusText.className = 'font-medium text-green-400';
+                    new Notification('Test from {{ brand.name }}', {
+                        body: 'If you see this, notifications are working!',
+                        icon: '/static/icons/icon-192.png'
+                    });
+                } else {
+                    statusText.textContent = '⚠️ ' + (data.message || 'Test failed');
+                    statusText.className = 'font-medium text-yellow-400';
+                }
+                setTimeout(runNotificationDiagnostic, 3000);
+            } catch (e) {
+                console.error('Test error:', e);
+                statusText.textContent = '❌ Test failed';
+                setTimeout(runNotificationDiagnostic, 2000);
+            }
+            break;
+            
+        case 'openAndroidSettings':
+            try {
+                const result = await Notification.requestPermission();
+                if (result === 'granted') await setupPushSubscription();
+            } catch (e) {
+                alert('To enable notifications:\n\n1. Tap the ⋮ menu at top right\n2. Go to Settings → Site Settings → Notifications\n3. Find this site and tap Allow');
+            }
+            setTimeout(runNotificationDiagnostic, 1000);
+            break;
+            
+        case 'recheck':
+            runNotificationDiagnostic();
+            break;
+    }
+}
+
+async function setupPushSubscription() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        throw new Error('Push not supported');
+    }
+    
+    const registration = await navigator.serviceWorker.ready;
+    const response = await fetch('/push/vapid-public-key');
+    if (!response.ok) throw new Error('VAPID not configured');
+    const { publicKey } = await response.json();
+    
+    const existing = await registration.pushManager.getSubscription();
+    if (existing) await existing.unsubscribe();
+    
+    const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey)
+    });
+    
+    const formData = new FormData();
+    formData.append('endpoint', subscription.endpoint);
+    formData.append('p256dh', arrayBufferToBase64(subscription.getKey('p256dh')));
+    formData.append('auth', arrayBufferToBase64(subscription.getKey('auth')));
+    
+    const regResponse = await fetch('/push/subscribe', { method: 'POST', body: formData });
+    if (!regResponse.ok) throw new Error('Server registration failed');
+    
+    return subscription;
+}
 </script>
 {% endblock %}

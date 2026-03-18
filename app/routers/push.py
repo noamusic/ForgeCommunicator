@@ -26,6 +26,28 @@ async def get_vapid_public_key():
     return JSONResponse({"publicKey": settings.vapid_public_key})
 
 
+@router.get("/status")
+async def get_push_status(
+    user: CurrentUser,
+    db: DBSession,
+):
+    """Get push notification status for the current user."""
+    from sqlalchemy import func
+    
+    # Count user's subscriptions
+    result = await db.execute(
+        select(func.count()).select_from(PushSubscription).where(
+            PushSubscription.user_id == user.id
+        )
+    )
+    subscriptions_count = result.scalar() or 0
+    
+    return JSONResponse({
+        "vapid_configured": bool(settings.vapid_public_key),
+        "subscriptions_count": subscriptions_count,
+    })
+
+
 @router.post("/subscribe")
 async def subscribe(
     request: Request,
