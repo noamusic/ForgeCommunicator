@@ -1,0 +1,29 @@
+{% for message in messages %}
+<div class="flex items-start space-x-3 message-appear {% if message.role == 'user' %}flex-row-reverse space-x-reverse{% endif %}">
+    <!-- Avatar -->
+    {% if message.role == 'user' %}
+    <div class="w-8 h-8 rounded-full bg-blue-500/30 border border-blue-400/50 flex items-center justify-center flex-shrink-0">
+        <span class="text-blue-300 text-sm font-medium">{{ user.display_name[0] if user else 'U' }}</span>
+    </div>
+    {% else %}
+    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2"/>
+        </svg>
+    </div>
+    {% endif %}
+    
+    <!-- Message content -->
+    <div class="max-w-[70%] {% if message.role == 'user' %}text-right{% endif %}">
+        <div class="inline-block px-4 py-3 rounded-2xl {% if message.role == 'user' %}bg-blue-500 text-white rounded-tr-sm{% else %}bg-dark-700 text-gray-100 rounded-tl-sm{% endif %}">
+            <div class="text-sm whitespace-pre-wrap">{{ message.content }}</div>
+        </div>
+        <div class="text-xs text-gray-500 mt-1 px-2">
+            {{ message.created_at.strftime('%H:%M') if message.created_at else 'Now' }}
+            {% if message.tokens_used %}
+            <span class="text-gray-600">· {{ message.tokens_used }} tokens</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}

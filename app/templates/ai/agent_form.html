@@ -1,0 +1,292 @@
+{% extends "layout.html" %}
+
+{% block title %}{% if agent %}Edit {{ agent.display_name }}{% else %}Create AI Agent{% endif %} - {{ brand.full_name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-dark-950 py-8">
+    <div class="max-w-2xl mx-auto px-4">
+        <!-- Header -->
+        <div class="mb-8">
+            <a href="{% if workspace %}/workspaces/{{ workspace.id }}/settings/ai{% else %}/ai/agents{% endif %}" class="text-gray-400 hover:text-white inline-flex items-center space-x-2 mb-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                <span>Back</span>
+            </a>
+            <h1 class="text-2xl font-bold text-white">
+                {% if agent %}Edit AI Agent{% else %}Create AI Agent{% endif %}
+            </h1>
+            <p class="text-gray-400 mt-1">
+                {% if workspace %}
+                Configure an AI assistant for {{ workspace.name }}
+                {% else %}
+                Create a personal AI assistant powered by your API key
+                {% endif %}
+            </p>
+        </div>
+        
+        <!-- Form -->
+        <form method="post" action="{% if agent %}/ai/agents/{{ agent.id }}{% else %}/ai/agents{% endif %}" class="space-y-6">
+            {% if workspace %}
+            <input type="hidden" name="workspace_id" value="{{ workspace.id }}">
+            {% endif %}
+            
+            <!-- Basic Info -->
+            <div class="glass-dark border border-white/10 rounded-xl p-6 space-y-4">
+                <h3 class="text-lg font-semibold text-white mb-4">Basic Information</h3>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                        <input 
+                            type="text" 
+                            name="name" 
+                            id="name"
+                            value="{{ agent.name if agent else '' }}"
+                            placeholder="my-assistant"
+                            pattern="[a-z0-9-]+"
+                            class="w-full px-4 py-2 bg-dark-800 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent"
+                            required
+                        >
+                        <p class="text-xs text-gray-500 mt-1">Lowercase letters, numbers, hyphens only</p>
+                    </div>
+                    
+                    <div>
+                        <label for="display_name" class="block text-sm font-medium text-gray-300 mb-2">Display Name</label>
+                        <input 
+                            type="text" 
+                            name="display_name" 
+                            id="display_name"
+                            value="{{ agent.display_name if agent else '' }}"
+                            placeholder="My AI Assistant"
+                            class="w-full px-4 py-2 bg-dark-800 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent"
+                            required
+                        >
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-300 mb-2">Description (optional)</label>
+                    <textarea 
+                        name="description" 
+                        id="description"
+                        rows="2"
+                        placeholder="What does this agent do?"
+                        class="w-full px-4 py-2 bg-dark-800 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent resize-none"
+                    >{{ agent.description if agent else '' }}</textarea>
+                </div>
+            </div>
+            
+            <!-- AI Provider -->
+            <div class="glass-dark border border-white/10 rounded-xl p-6 space-y-4">
+                <h3 class="text-lg font-semibold text-white mb-4">AI Provider</h3>
+                
+                <div>
+                    <label for="provider" class="block text-sm font-medium text-gray-300 mb-2">Provider</label>
+                    <select 
+                        name="provider" 
+                        id="provider"
+                        onchange="updateModelOptions()"
+                        class="w-full px-4 py-2 bg-dark-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent"
+                        required
+                    >
+                        {% for provider in providers %}
+                        <option value="{{ provider }}" {% if agent and agent.provider.value == provider %}selected{% endif %}>
+                            {% if provider == 'openai' %}OpenAI (ChatGPT)
+                            {% elif provider == 'anthropic' %}Anthropic (Claude)
+                            {% elif provider == 'perplexity' %}Perplexity AI
+                            {% else %}{{ provider|title }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="model" class="block text-sm font-medium text-gray-300 mb-2">Model</label>
+                    <select 
+                        name="model" 
+                        id="model"
+                        class="w-full px-4 py-2 bg-dark-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent"
+                        required
+                    >
+                        <!-- Options populated by JavaScript -->
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="api_key" class="block text-sm font-medium text-gray-300 mb-2">
+                        API Key
+                        {% if agent %}<span class="text-gray-500">(leave blank to keep existing)</span>{% endif %}
+                    </label>
+                    <input 
+                        type="password" 
+                        name="api_key" 
+                        id="api_key"
+                        placeholder="{% if agent %}••••••••••••{% else %}sk-...{% endif %}"
+                        class="w-full px-4 py-2 bg-dark-800 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent"
+                        {% if not agent %}required{% endif %}
+                    >
+                    <p class="text-xs text-gray-500 mt-1">Your API key is encrypted and stored securely</p>
+                </div>
+            </div>
+            
+            <!-- Advanced Settings -->
+            <div x-data="{ expanded: false }" class="glass-dark border border-white/10 rounded-xl overflow-hidden">
+                <button 
+                    type="button"
+                    @click="expanded = !expanded"
+                    class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+                >
+                    <h3 class="text-lg font-semibold text-white">Advanced Settings</h3>
+                    <svg class="w-5 h-5 text-gray-400 transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                
+                <div x-show="expanded" x-collapse class="px-6 pb-6 space-y-4 border-t border-white/10 pt-4">
+                    <div>
+                        <label for="system_prompt" class="block text-sm font-medium text-gray-300 mb-2">System Prompt (optional)</label>
+                        <textarea 
+                            name="system_prompt" 
+                            id="system_prompt"
+                            rows="4"
+                            placeholder="You are a helpful assistant..."
+                            class="w-full px-4 py-2 bg-dark-800 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent resize-none font-mono text-sm"
+                        >{{ agent.system_prompt if agent else '' }}</textarea>
+                        <p class="text-xs text-gray-500 mt-1">Custom instructions for the AI's behavior</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="temperature" class="block text-sm font-medium text-gray-300 mb-2">Temperature</label>
+                            <input 
+                                type="number" 
+                                name="temperature" 
+                                id="temperature"
+                                value="{{ agent.temperature if agent else 0.7 }}"
+                                min="0"
+                                max="2"
+                                step="0.1"
+                                class="w-full px-4 py-2 bg-dark-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent"
+                            >
+                            <p class="text-xs text-gray-500 mt-1">0 = focused, 2 = creative</p>
+                        </div>
+                        
+                        <div>
+                            <label for="max_tokens" class="block text-sm font-medium text-gray-300 mb-2">Max Tokens</label>
+                            <input 
+                                type="number" 
+                                name="max_tokens" 
+                                id="max_tokens"
+                                value="{{ agent.max_tokens if agent else 4096 }}"
+                                min="100"
+                                max="128000"
+                                class="w-full px-4 py-2 bg-dark-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent"
+                            >
+                            <p class="text-xs text-gray-500 mt-1">Maximum response length</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Capabilities -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-3">Workspace Access</label>
+                        <div class="space-y-3">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    name="can_read_channels" 
+                                    value="true"
+                                    {% if agent and agent.can_read_channels %}checked{% endif %}
+                                    class="w-5 h-5 rounded bg-dark-800 border-white/20 text-purple-500 focus:ring-purple-500/50 focus:ring-offset-0"
+                                >
+                                <span class="text-gray-300">Can read channel messages</span>
+                            </label>
+                            
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    name="can_read_artifacts" 
+                                    value="true"
+                                    {% if agent and agent.can_read_artifacts %}checked{% endif %}
+                                    class="w-5 h-5 rounded bg-dark-800 border-white/20 text-purple-500 focus:ring-purple-500/50 focus:ring-offset-0"
+                                >
+                                <span class="text-gray-300">Can read artifacts</span>
+                            </label>
+                            
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    name="can_read_notes" 
+                                    value="true"
+                                    {% if agent and agent.can_read_notes %}checked{% endif %}
+                                    class="w-5 h-5 rounded bg-dark-800 border-white/20 text-purple-500 focus:ring-purple-500/50 focus:ring-offset-0"
+                                >
+                                <span class="text-gray-300">Can read notes</span>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">When enabled, the agent can access this context to provide better responses</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex items-center justify-between pt-4">
+                {% if agent %}
+                <form method="post" action="/ai/agents/{{ agent.id }}/delete" onsubmit="return confirm('Are you sure you want to delete this agent?');">
+                    <button type="submit" class="px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors">
+                        Delete Agent
+                    </button>
+                </form>
+                {% else %}
+                <div></div>
+                {% endif %}
+                
+                <div class="flex items-center space-x-4">
+                    <a href="{% if workspace %}/workspaces/{{ workspace.id }}/settings/ai{% else %}/ai/agents{% endif %}" class="px-6 py-2 text-gray-400 hover:text-white transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all">
+                        {% if agent %}Save Changes{% else %}Create Agent{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Model options by provider
+const modelsByProvider = {{ models_by_provider|tojson }};
+const defaultModels = {{ default_models|tojson }};
+const currentModel = "{{ agent.model if agent else '' }}";
+
+function updateModelOptions() {
+    const provider = document.getElementById('provider').value;
+    const modelSelect = document.getElementById('model');
+    const models = modelsByProvider[provider] || {};
+    const defaultModel = defaultModels[provider];
+    
+    // Clear current options
+    modelSelect.innerHTML = '';
+    
+    // Add new options
+    for (const [value, label] of Object.entries(models)) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        
+        // Select current model or default
+        if (currentModel && value === currentModel) {
+            option.selected = true;
+        } else if (!currentModel && value === defaultModel) {
+            option.selected = true;
+        }
+        
+        modelSelect.appendChild(option);
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', updateModelOptions);
+</script>
+{% endblock %}

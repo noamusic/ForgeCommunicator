@@ -1,0 +1,124 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ agent.display_name }} - {{ brand.full_name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-dark-950 py-8">
+    <div class="max-w-2xl mx-auto px-4">
+        <!-- Header -->
+        <div class="mb-8">
+            <a href="/ai/agents" class="text-gray-400 hover:text-white inline-flex items-center space-x-2 mb-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                <span>Back to Agents</span>
+            </a>
+        </div>
+        
+        <!-- Agent Card -->
+        <div class="glass-dark border border-white/10 rounded-xl overflow-hidden">
+            <!-- Header with gradient -->
+            <div class="h-32 bg-gradient-to-br from-purple-500/30 via-blue-500/20 to-transparent relative">
+                <div class="absolute -bottom-10 left-6">
+                    {% if agent.avatar_url %}
+                    <img src="{{ agent.avatar_url }}" alt="{{ agent.display_name }}" class="w-20 h-20 rounded-full object-cover ring-4 ring-dark-950">
+                    {% else %}
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center ring-4 ring-dark-950">
+                        <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5z"/>
+                        </svg>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if can_admin %}
+                <div class="absolute top-4 right-4">
+                    <a href="/ai/agents/{{ agent.id }}/edit" class="px-4 py-2 bg-dark-800/80 backdrop-blur text-white rounded-lg hover:bg-dark-700 transition-colors inline-flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        <span>Edit</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Content -->
+            <div class="pt-14 px-6 pb-6">
+                <div class="flex items-center space-x-3 mb-2">
+                    <h1 class="text-2xl font-bold text-white">{{ agent.display_name }}</h1>
+                    <span class="px-2 py-0.5 text-xs rounded-full 
+                        {% if agent.provider.value == 'openai' %}bg-green-500/20 text-green-400
+                        {% elif agent.provider.value == 'anthropic' %}bg-orange-500/20 text-orange-400
+                        {% else %}bg-blue-500/20 text-blue-400{% endif %}">
+                        {{ agent.provider.value|title }}
+                    </span>
+                    <span class="px-2 py-0.5 text-xs rounded-full bg-gray-500/20 text-gray-400">
+                        {% if agent.scope.value == 'workspace' %}Workspace{% else %}Personal{% endif %}
+                    </span>
+                </div>
+                
+                <p class="text-gray-400 mb-4">@{{ agent.name }}</p>
+                
+                {% if agent.description %}
+                <p class="text-gray-300 mb-6">{{ agent.description }}</p>
+                {% endif %}
+                
+                <!-- Model info -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="p-4 bg-dark-800/50 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Model</p>
+                        <p class="text-white font-mono text-sm">{{ agent.model }}</p>
+                    </div>
+                    <div class="p-4 bg-dark-800/50 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Temperature</p>
+                        <p class="text-white">{{ agent.temperature }}</p>
+                    </div>
+                </div>
+                
+                <!-- Capabilities -->
+                <div class="mb-6">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide mb-3">Capabilities</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% if agent.can_read_channels %}
+                        <span class="px-3 py-1.5 bg-green-500/10 text-green-400 rounded-lg border border-green-500/20 text-sm">
+                            📨 Can read channels
+                        </span>
+                        {% endif %}
+                        {% if agent.can_read_artifacts %}
+                        <span class="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20 text-sm">
+                            📎 Can read artifacts
+                        </span>
+                        {% endif %}
+                        {% if agent.can_read_notes %}
+                        <span class="px-3 py-1.5 bg-purple-500/10 text-purple-400 rounded-lg border border-purple-500/20 text-sm">
+                            📝 Can read notes
+                        </span>
+                        {% endif %}
+                        {% if not agent.can_read_channels and not agent.can_read_artifacts and not agent.can_read_notes %}
+                        <span class="text-gray-500 text-sm">No workspace access configured</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if agent.system_prompt %}
+                <div class="mb-6">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">System Prompt</p>
+                    <div class="p-4 bg-dark-800/50 rounded-lg">
+                        <p class="text-gray-300 text-sm font-mono whitespace-pre-wrap">{{ agent.system_prompt }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Action button -->
+                <a href="/ai/chat/{{ agent.id }}" class="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                    </svg>
+                    <span>Start Chatting</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

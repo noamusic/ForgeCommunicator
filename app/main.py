@@ -228,6 +228,10 @@ app.include_router(api.router)  # DRF-compatible API for CollabHub
 from app.routers import integrations
 app.include_router(integrations.router)
 
+# Import and include AI router
+from app.routers import ai
+app.include_router(ai.router)
+
 
 # Error handlers - Handle HTTPException from FastAPI
 from starlette.exceptions import HTTPException as StarletteHTTPException

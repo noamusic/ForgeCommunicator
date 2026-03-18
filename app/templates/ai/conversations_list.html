@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+
+{% block title %}AI Conversations - {{ brand.full_name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-dark-950 py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-white">AI Conversations</h1>
+                <p class="text-gray-400 mt-1">Your chat history with AI agents</p>
+            </div>
+            
+            <!-- Filter by agent -->
+            <div class="flex items-center space-x-4">
+                <select onchange="location = this.value" class="px-4 py-2 bg-dark-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50">
+                    <option value="/ai/conversations" {% if not selected_agent_id %}selected{% endif %}>All Agents</option>
+                    {% for agent in agents %}
+                    <option value="/ai/conversations?agent_id={{ agent.id }}" {% if selected_agent_id == agent.id %}selected{% endif %}>
+                        {{ agent.display_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        {% if conversations %}
+        <div class="space-y-3">
+            {% for conv in conversations %}
+            <a href="/ai/chat/{{ conv.agent_id }}?conversation_id={{ conv.id }}" class="block glass-dark border border-white/10 rounded-xl p-4 hover:border-purple-500/50 transition-colors">
+                <div class="flex items-center space-x-4">
+                    <!-- Agent avatar -->
+                    {% if conv.agent.avatar_url %}
+                    <img src="{{ conv.agent.avatar_url }}" alt="{{ conv.agent.display_name }}" class="w-10 h-10 rounded-full object-cover ring-2 ring-purple-500/30">
+                    {% else %}
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2"/>
+                        </svg>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-white font-medium truncate">
+                                {% if conv.title %}
+                                {{ conv.title }}
+                                {% else %}
+                                Chat with {{ conv.agent.display_name }}
+                                {% endif %}
+                            </h3>
+                            <span class="text-xs text-gray-500 ml-4 flex-shrink-0">
+                                {{ conv.updated_at.strftime('%b %d, %H:%M') if conv.updated_at else conv.created_at.strftime('%b %d, %H:%M') }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-400 mt-1">
+                            {{ conv.agent.display_name }} · {{ conv.message_count or 0 }} messages
+                        </p>
+                    </div>
+                    
+                    <svg class="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="glass-dark border border-white/10 rounded-xl p-12 text-center">
+            <div class="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center mx-auto mb-6">
+                <svg class="w-10 h-10 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-white mb-2">No Conversations Yet</h3>
+            <p class="text-gray-400 mb-6 max-w-md mx-auto">
+                Start a conversation with one of your AI agents to see your chat history here.
+            </p>
+            {% if agents %}
+            <div class="flex flex-wrap justify-center gap-3">
+                {% for agent in agents[:3] %}
+                <a href="/ai/chat/{{ agent.id }}" class="px-4 py-2 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors inline-flex items-center space-x-2">
+                    <span>Chat with {{ agent.display_name }}</span>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <a href="/ai/agents/new" class="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <span>Create Your First Agent</span>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
