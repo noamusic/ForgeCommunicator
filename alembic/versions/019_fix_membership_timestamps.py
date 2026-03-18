@@ -1,6 +1,6 @@
 """Fix membership timestamp columns
 
-Revision ID: 019_fix_membership_timestamps
+Revision ID: 019
 Revises: 018
 Create Date: 2026-03-18
 
@@ -12,7 +12,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import inspect
 
-revision = "019_fix_membership_timestamps"
+revision = "019"
 down_revision = "018"
 branch_labels = None
 depends_on = None

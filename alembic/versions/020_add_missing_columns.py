@@ -29,10 +29,8 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import inspect
 
-
-# Revision identifiers, used by Alembic.
 revision: str = '020_add_missing_columns'
-down_revision: Union[str, None] = '019_fix_membership_timestamps'
+down_revision: Union[str, None] = '019'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
