@@ -52,7 +52,7 @@ def column_exists(table_name: str, column_name: str) -> bool:
     return column_name in columns
 
 
-def add_column_if_not_exists(table: str, column_name: str, column_type: sa.TypeEngine, **kwargs) -> None:
+def add_column_if_not_exists(table: str, column_name: str, column_type, **kwargs) -> None:
     """Add a column only if it doesn't already exist."""
     if not column_exists(table, column_name):
         op.add_column(table, sa.Column(column_name, column_type, **kwargs))
