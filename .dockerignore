@@ -27,6 +27,5 @@ Makefile
 docker-compose*.yml
 tests/
 forge/
-scripts/
 *.ini
 !alembic.ini
