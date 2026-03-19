@@ -166,9 +166,9 @@ async def service_worker():
 async def pwa_manifest():
     """Serve PWA manifest with dynamic branding."""
     from fastapi.responses import JSONResponse
-    from app.brand import get_brand_context
+    from app.brand import get_brand
     
-    brand = get_brand_context()
+    brand = get_brand()
     
     manifest = {
         "name": brand.full_name,  # e.g., "Buildly Communicator"

@@ -55,6 +55,17 @@
                     </svg>
                     Manage Users
                 </a>
+                <a href="/admin/pending-approvals" class="inline-flex items-center px-4 py-2 glass border border-yellow-500/50 shadow-lg shadow-yellow-500/10 text-sm font-medium rounded-lg text-yellow-400 {% if pending_approval_count > 0 %}bg-yellow-900/30{% else %}bg-transparent{% endif %} hover:bg-yellow-900/50 transition-all">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Pending Approvals
+                    {% if pending_approval_count > 0 %}
+                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                        {{ pending_approval_count }}
+                    </span>
+                    {% endif %}
+                </a>
                 <a href="/admin/workspaces" class="inline-flex items-center px-4 py-2 glass border border-white/20 shadow-sm text-sm font-medium rounded-lg text-gray-200 hover:bg-white/10 transition-all">
                     <svg class="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>

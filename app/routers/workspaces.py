@@ -10,10 +10,11 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.deps import CurrentUser, DBSession
+from app.deps import CurrentUser, DBSession, WorkspaceCreator
 from app.models.artifact import Artifact
 from app.models.channel import Channel
 from app.models.membership import Membership, MembershipRole
+from app.models.message import Message
 from app.models.product import Product
 from app.models.team_invite import TeamInvite, InviteStatus
 from app.models.workspace import Workspace
@@ -113,6 +114,15 @@ async def list_workspaces(
     # Check if user is admin (either flagged or in admin emails)
     is_admin = user.is_platform_admin or settings.is_admin_email(user.email)
     
+    # Check if workspace creation is allowed for this user
+    from app.models.site_config import SiteConfig, ConfigKeys
+    result = await db.execute(
+        select(SiteConfig).where(SiteConfig.key == ConfigKeys.REQUIRE_WORKSPACE_CREATE_APPROVAL)
+    )
+    config = result.scalar_one_or_none()
+    require_ws_approval = config and config.value == "true"
+    can_create_workspaces = is_admin or user.can_create_workspaces or not require_ws_approval
+    
     return templates.TemplateResponse(
         "workspaces/list.html",
         {
@@ -121,6 +131,7 @@ async def list_workspaces(
             "workspaces": workspaces,
             "workspace_unread_counts": workspace_unread_counts,
             "is_admin": is_admin,
+            "can_create_workspaces": can_create_workspaces,
         },
     )
 
@@ -294,7 +305,7 @@ async def new_workspace_form(
 @router.post("/new")
 async def create_workspace(
     request: Request,
-    user: CurrentUser,
+    user: WorkspaceCreator,  # Requires workspace creation permission
     db: DBSession,
     name: Annotated[str, Form()],
     description: Annotated[str | None, Form()] = None,

@@ -74,6 +74,10 @@ class ConfigKeys:
     
     # Custom CSS
     CUSTOM_CSS = "custom_css"
+    
+    # Account Approval
+    REQUIRE_ACCOUNT_APPROVAL = "require_account_approval"  # 'true' or 'false'
+    REQUIRE_WORKSPACE_CREATE_APPROVAL = "require_workspace_create_approval"  # 'true' or 'false'
 
 
 # Theme presets

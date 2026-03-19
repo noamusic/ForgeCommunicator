@@ -100,6 +100,13 @@ class User(Base, TimestampMixin):
     # Status
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     is_platform_admin: Mapped[bool] = mapped_column(default=False, nullable=False)  # Platform-wide admin
+    
+    # Account approval (for admin-controlled onboarding)
+    is_approved: Mapped[bool] = mapped_column(default=True, nullable=False)  # Whether account is approved
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    approved_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    can_create_workspaces: Mapped[bool] = mapped_column(default=True, nullable=False)  # Permission to create workspaces
+    
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     
     # Relationships
@@ -111,6 +118,7 @@ class User(Base, TimestampMixin):
     notification_logs = relationship("NotificationLog", back_populates="user", lazy="noload")
     sessions = relationship("UserSession", back_populates="user", lazy="noload", cascade="all, delete-orphan")
     attachments = relationship("Attachment", back_populates="user", lazy="noload")
+    approved_by = relationship("User", remote_side="User.id", foreign_keys=[approved_by_id], lazy="joined")
     
     def generate_session_token(self) -> str:
         """Generate a new session token and set expiry."""

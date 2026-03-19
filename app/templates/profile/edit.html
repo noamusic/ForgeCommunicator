@@ -3,8 +3,28 @@
 {% block title %}Edit Profile - Forge Communicator{% endblock %}
 
 {% block content %}
-<div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8 content-layer">
+<div class="min-h-screen py-8 sm:py-12 px-4 sm:px-6 lg:px-8 pb-20 content-layer">
     <div class="max-w-3xl mx-auto">
+        <!-- Pending Approval Message -->
+        {% if pending_approval %}
+        <div class="mb-6 glass-dark border border-yellow-500/30 rounded-xl p-6">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-medium text-yellow-400">Account Pending Approval</h3>
+                    <div class="mt-2 text-sm text-gray-300">
+                        <p>Your account is awaiting approval by an administrator. Once approved, you'll have full access to workspaces and channels.</p>
+                        <p class="mt-2 text-gray-400">In the meantime, you can update your profile information below.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
         <!-- Header -->
         <div class="mb-8">
             <a href="/workspaces" class="inline-flex items-center text-sm text-gray-400 hover:text-white transition-colors mb-4">

@@ -67,6 +67,33 @@ def set_session_cookie(response: Response, session_token: str, request: Request 
     )
 
 
+async def get_approval_defaults(db) -> dict:
+    """Get default values for approval fields based on site config.
+    
+    Returns dict with is_approved and can_create_workspaces values.
+    """
+    from app.models.site_config import SiteConfig, ConfigKeys
+    
+    # Check if account approval is required
+    result = await db.execute(
+        select(SiteConfig).where(SiteConfig.key == ConfigKeys.REQUIRE_ACCOUNT_APPROVAL)
+    )
+    config = result.scalar_one_or_none()
+    require_account_approval = config and config.value == "true"
+    
+    # Check if workspace creation approval is required
+    result = await db.execute(
+        select(SiteConfig).where(SiteConfig.key == ConfigKeys.REQUIRE_WORKSPACE_CREATE_APPROVAL)
+    )
+    config = result.scalar_one_or_none()
+    require_workspace_approval = config and config.value == "true"
+    
+    return {
+        "is_approved": not require_account_approval,  # approved by default if not required
+        "can_create_workspaces": not require_workspace_approval,  # allowed by default if not required
+    }
+
+
 async def create_user_session(db: DBSession, user: User, request: Request) -> str:
     """Create a new session for the user and return the session token.
     
@@ -263,13 +290,20 @@ async def register(
             status_code=status.HTTP_302_FOUND,
         )
     
+    # Get approval defaults based on site config
+    approval_defaults = await get_approval_defaults(db)
+    is_admin = settings.is_admin_email(email)
+    
     # Create user
     user = User(
         email=email.lower(),
         display_name=display_name.strip(),
         hashed_password=hash_password(password),
         auth_provider=AuthProvider.LOCAL,
-        is_platform_admin=settings.is_admin_email(email),
+        is_platform_admin=is_admin,
+        # Admins are always approved and can create workspaces
+        is_approved=True if is_admin else approval_defaults["is_approved"],
+        can_create_workspaces=True if is_admin else approval_defaults["can_create_workspaces"],
     )
     db.add(user)
     await db.flush()  # Get user.id before creating session
@@ -277,6 +311,17 @@ async def register(
     # Create session (multi-device support)
     session_token = await create_user_session(db, user, request)
     await db.commit()
+    
+    # Check if user needs approval
+    if not user.is_approved:
+        redirect = RedirectResponse(url="/profile?pending=true", status_code=status.HTTP_302_FOUND)
+        set_session_cookie(redirect, session_token, request)
+        if request.headers.get("HX-Request"):
+            response = HTMLResponse("")
+            response.headers["HX-Redirect"] = "/profile?pending=true"
+            set_session_cookie(response, session_token, request)
+            return response
+        return redirect
     
     # Set cookie and redirect
     redirect = RedirectResponse(url="/workspaces", status_code=status.HTTP_302_FOUND)
@@ -559,6 +604,10 @@ async def oauth_callback(
                 user.labs_refresh_token = refresh_token
                 user.labs_token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
         else:
+            # Get approval defaults based on site config
+            approval_defaults = await get_approval_defaults(db)
+            is_admin = settings.is_admin_email(user_info.email)
+            
             # Create new user
             user = User(
                 email=user_info.email,
@@ -566,6 +615,10 @@ async def oauth_callback(
                 auth_provider=AuthProvider(provider),
                 provider_sub=user_info.sub,
                 avatar_url=user_info.picture,
+                is_platform_admin=is_admin,
+                # Admins are always approved and can create workspaces
+                is_approved=True if is_admin else approval_defaults["is_approved"],
+                can_create_workspaces=True if is_admin else approval_defaults["can_create_workspaces"],
             )
             # Store Buildly-specific data for new users
             if provider == "buildly" and user_info.extra:
@@ -599,8 +652,9 @@ async def oauth_callback(
         # Check if this OAuth flow was started from PWA (for longer session)
         is_pwa_flow = request.cookies.get("oauth_pwa") == "1"
         
-        # Redirect with session cookie
-        response = RedirectResponse(url="/workspaces", status_code=status.HTTP_302_FOUND)
+        # Redirect to appropriate page based on approval status
+        redirect_url = "/profile?pending=true" if not user.is_approved else "/workspaces"
+        response = RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
         
         # Use PWA session duration if OAuth was started from PWA
         if is_pwa_flow:

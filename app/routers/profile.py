@@ -4,7 +4,7 @@ User profile router.
 
 from typing import Annotated
 
-from fastapi import APIRouter, Form, HTTPException, Request, status
+from fastapi import APIRouter, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 
@@ -25,6 +25,7 @@ async def my_profile(
     request: Request,
     user: CurrentUser,
     db: DBSession,
+    pending: Annotated[str | None, Query()] = None,
 ):
     """View and edit own profile."""
     # Get user's workspaces
@@ -36,6 +37,9 @@ async def my_profile(
     )
     workspaces = result.scalars().all()
     
+    # Show pending approval message if user is not approved
+    show_pending_message = pending == "true" or not user.is_approved
+    
     return templates.TemplateResponse(
         "profile/edit.html",
         {
@@ -46,6 +50,7 @@ async def my_profile(
             "is_own_profile": True,
             "statuses": UserStatus,
             "google_enabled": settings.google_oauth_enabled,
+            "pending_approval": show_pending_message,
         },
     )
 

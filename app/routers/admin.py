@@ -69,6 +69,11 @@ async def admin_dashboard(
     user_count = await db.scalar(select(func.count()).select_from(User))
     workspace_count = await db.scalar(select(func.count()).select_from(Workspace))
     
+    # Get pending approval count
+    pending_approval_count = await db.scalar(
+        select(func.count()).select_from(User).where(User.is_approved == False)
+    )
+    
     # Recent users
     result = await db.execute(
         select(User).order_by(User.created_at.desc()).limit(10)
@@ -96,6 +101,7 @@ async def admin_dashboard(
             "user": user,
             "user_count": user_count,
             "workspace_count": workspace_count,
+            "pending_approval_count": pending_approval_count or 0,
             "recent_users": recent_users,
             "registration_mode": settings.registration_mode,
             "integration_status": integration_status,
@@ -241,6 +247,257 @@ async def toggle_user_admin(
         return HTMLResponse('<span class="text-gray-400 text-sm">—</span>')
     
     return RedirectResponse(url=f"/admin/users/{user_id}", status_code=303)
+
+
+# =============================================================================
+# Account Approval Management
+# =============================================================================
+
+async def get_approval_settings(db) -> dict:
+    """Get account approval settings from config."""
+    config = await get_config_dict(db)
+    return {
+        "require_account_approval": config.get(ConfigKeys.REQUIRE_ACCOUNT_APPROVAL, "false") == "true",
+        "require_workspace_create_approval": config.get(ConfigKeys.REQUIRE_WORKSPACE_CREATE_APPROVAL, "false") == "true",
+    }
+
+
+@router.get("/pending-approvals", response_class=HTMLResponse)
+async def admin_pending_approvals(
+    request: Request,
+    user: CurrentUser,
+    db: DBSession,
+):
+    """List users pending approval."""
+    await require_platform_admin(user)
+    
+    # Get pending users (not approved)
+    result = await db.execute(
+        select(User)
+        .where(User.is_approved == False)
+        .order_by(User.created_at.desc())
+    )
+    pending_users = result.scalars().all()
+    
+    # Get users pending workspace creation approval
+    result = await db.execute(
+        select(User)
+        .where(User.is_approved == True, User.can_create_workspaces == False)
+        .order_by(User.created_at.desc())
+    )
+    pending_workspace_users = result.scalars().all()
+    
+    # Get approval settings
+    approval_settings = await get_approval_settings(db)
+    
+    return templates.TemplateResponse(
+        "admin/pending_approvals.html",
+        {
+            "request": request,
+            "user": user,
+            "pending_users": pending_users,
+            "pending_workspace_users": pending_workspace_users,
+            "approval_settings": approval_settings,
+        },
+    )
+
+
+@router.post("/users/{user_id}/approve")
+async def approve_user(
+    request: Request,
+    user: CurrentUser,
+    db: DBSession,
+    user_id: int,
+):
+    """Approve a user account."""
+    await require_platform_admin(user)
+    
+    from datetime import datetime, timezone
+    
+    target_user = await db.get(User, user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    target_user.is_approved = True
+    target_user.approved_at = datetime.now(timezone.utc)
+    target_user.approved_by_id = user.id
+    
+    await db.commit()
+    
+    # TODO: Send notification email to user
+    
+    if request.headers.get("HX-Request"):
+        # Check if request is from user detail page (not pending approvals table)
+        hx_target = request.headers.get("HX-Target", "")
+        if hx_target == "user-approval":
+            # User detail page: return a badge
+            return HTMLResponse(
+                '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">Approved</span>'
+            )
+        # Pending approvals list: return a row that fades out
+        return HTMLResponse(
+            f'''<tr id="pending-row-{user_id}" class="bg-green-900/20 transition-opacity duration-500" 
+                    x-data x-init="setTimeout(() => $el.remove(), 1000)">
+                <td colspan="4" class="px-6 py-4 text-center text-green-400">
+                    <div class="flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {target_user.display_name} has been approved
+                    </div>
+                </td>
+            </tr>'''
+        )
+    
+    return RedirectResponse(url="/admin/pending-approvals", status_code=303)
+
+
+@router.post("/users/{user_id}/reject")
+async def reject_user(
+    request: Request,
+    user: CurrentUser,
+    db: DBSession,
+    user_id: int,
+):
+    """Reject and delete a user account."""
+    await require_platform_admin(user)
+    
+    target_user = await db.get(User, user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Can't reject yourself
+    if target_user.id == user.id:
+        raise HTTPException(status_code=400, detail="Cannot reject yourself")
+    
+    display_name = target_user.display_name
+    
+    # Delete the user
+    await db.delete(target_user)
+    await db.commit()
+    
+    if request.headers.get("HX-Request"):
+        # Return a row that fades out and removes itself
+        return HTMLResponse(
+            f'''<tr id="pending-row-{user_id}" class="bg-red-900/20 transition-opacity duration-500" 
+                    x-data x-init="setTimeout(() => $el.remove(), 1000)">
+                <td colspan="4" class="px-6 py-4 text-center text-red-400">
+                    <div class="flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        {display_name} has been rejected
+                    </div>
+                </td>
+            </tr>'''
+        )
+    
+    return RedirectResponse(url="/admin/pending-approvals", status_code=303)
+
+
+@router.post("/users/{user_id}/toggle-workspace-create")
+async def toggle_workspace_create(
+    request: Request,
+    user: CurrentUser,
+    db: DBSession,
+    user_id: int,
+):
+    """Toggle user's ability to create workspaces."""
+    await require_platform_admin(user)
+    
+    target_user = await db.get(User, user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    target_user.can_create_workspaces = not target_user.can_create_workspaces
+    await db.commit()
+    
+    if request.headers.get("HX-Request"):
+        # Check if request is from user detail page
+        hx_target = request.headers.get("HX-Target", "")
+        if hx_target == "user-workspace-perm":
+            # User detail page
+            if target_user.can_create_workspaces:
+                return HTMLResponse(
+                    '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">Can Create Workspaces</span>'
+                )
+            return HTMLResponse('')  # No badge when permission is revoked
+        
+        # Pending approvals page
+        if target_user.can_create_workspaces:
+            return HTMLResponse(
+                '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400">Yes</span>'
+            )
+        return HTMLResponse(
+            '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">No</span>'
+        )
+    
+    return RedirectResponse(url=f"/admin/users/{user_id}", status_code=303)
+
+
+@router.get("/config/approvals", response_class=HTMLResponse)
+async def admin_approvals_config(
+    request: Request,
+    user: CurrentUser,
+    db: DBSession,
+):
+    """Account approval settings page."""
+    await require_platform_admin(user)
+    
+    config = await get_config_dict(db)
+    
+    return templates.TemplateResponse(
+        "admin/approvals_config.html",
+        {
+            "request": request,
+            "user": user,
+            "config": config,
+            "require_account_approval": config.get(ConfigKeys.REQUIRE_ACCOUNT_APPROVAL, "false") == "true",
+            "require_workspace_create_approval": config.get(ConfigKeys.REQUIRE_WORKSPACE_CREATE_APPROVAL, "false") == "true",
+        },
+    )
+
+
+@router.post("/config/approvals")
+async def save_approvals_config(
+    request: Request,
+    user: CurrentUser,
+    db: DBSession,
+    require_account_approval: Annotated[str | None, Form()] = None,
+    require_workspace_create_approval: Annotated[str | None, Form()] = None,
+):
+    """Save account approval settings."""
+    await require_platform_admin(user)
+    
+    # Save each config value
+    await set_config(
+        db, 
+        ConfigKeys.REQUIRE_ACCOUNT_APPROVAL, 
+        "true" if require_account_approval else "false",
+        user.id
+    )
+    await set_config(
+        db, 
+        ConfigKeys.REQUIRE_WORKSPACE_CREATE_APPROVAL, 
+        "true" if require_workspace_create_approval else "false",
+        user.id
+    )
+    
+    await db.commit()
+    
+    if request.headers.get("HX-Request"):
+        return HTMLResponse(
+            '''<div id="success-message" class="mb-6 bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span>Approval settings saved successfully!</span>
+                </div>
+            </div>'''
+        )
+    
+    return RedirectResponse(url="/admin/config/approvals", status_code=303)
 
 
 @router.get("/workspaces", response_class=HTMLResponse)

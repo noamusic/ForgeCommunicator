@@ -154,6 +154,82 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 CurrentUserOptional = Annotated[User | None, Depends(get_current_user_optional)]
 
 
+async def require_approved_user(
+    request: Request,
+    user: CurrentUser,
+    db: DBSession,
+) -> User:
+    """Require user to have an approved account.
+    
+    Unapproved users can only access their profile page.
+    """
+    from app.models.site_config import SiteConfig, ConfigKeys
+    
+    # Check if approval is required
+    result = await db.execute(
+        select(SiteConfig).where(SiteConfig.key == ConfigKeys.REQUIRE_ACCOUNT_APPROVAL)
+    )
+    config = result.scalar_one_or_none()
+    approval_required = config and config.value == "true"
+    
+    if approval_required and not user.is_approved:
+        # Allow access to profile and auth routes
+        path = request.url.path
+        allowed_paths = ["/profile", "/auth/logout", "/static/"]
+        if any(path.startswith(p) for p in allowed_paths):
+            return user
+        
+        # For HTMX requests
+        if request.headers.get("HX-Request"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account pending approval",
+                headers={"HX-Redirect": "/profile?pending=true"},
+            )
+        # Redirect to profile with message
+        from fastapi.responses import RedirectResponse
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account pending approval. Please wait for an administrator to approve your account.",
+        )
+    
+    return user
+
+
+async def require_workspace_create_permission(
+    user: CurrentUser,
+    db: DBSession,
+) -> User:
+    """Require user to have permission to create workspaces.
+    
+    Checks if workspace creation approval is required and if user has permission.
+    """
+    from app.models.site_config import SiteConfig, ConfigKeys
+    
+    # Check if workspace creation approval is required
+    result = await db.execute(
+        select(SiteConfig).where(SiteConfig.key == ConfigKeys.REQUIRE_WORKSPACE_CREATE_APPROVAL)
+    )
+    config = result.scalar_one_or_none()
+    approval_required = config and config.value == "true"
+    
+    if approval_required and not user.can_create_workspaces:
+        # Platform admins can always create workspaces
+        if user.is_platform_admin or settings.is_admin_email(user.email):
+            return user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to create workspaces. Please contact an administrator.",
+        )
+    
+    return user
+
+
+# Type aliases for approved user checks
+ApprovedUser = Annotated[User, Depends(require_approved_user)]
+WorkspaceCreator = Annotated[User, Depends(require_workspace_create_permission)]
+
+
 async def get_workspace_membership(
     workspace_id: int,
     user: CurrentUser,
