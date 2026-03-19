@@ -79,13 +79,55 @@
                 </svg>
             </div>
             <h3 class="text-lg font-semibold text-white mb-2">Start a conversation with {{ agent.display_name }}</h3>
-            <p class="text-gray-400 text-sm max-w-md">
+            <p class="text-gray-400 text-sm max-w-md mb-6">
                 {% if agent.description %}
                 {{ agent.description }}
                 {% else %}
                 Ask me anything! I can help with questions, tasks, and more.
                 {% endif %}
             </p>
+            
+            <!-- Suggested prompts -->
+            <div class="w-full max-w-2xl">
+                <p class="text-xs text-gray-500 uppercase tracking-wide mb-3">Try asking</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {% if agent.can_read_channels %}
+                    <button type="button" onclick="usePrompt(this)" class="suggested-prompt text-left px-4 py-3 bg-dark-800/50 border border-white/10 rounded-xl text-gray-300 hover:bg-dark-700 hover:border-purple-500/30 transition-all group">
+                        <span class="text-purple-400 mr-2">📊</span>
+                        <span>Summarize what's been discussed in the channels today</span>
+                    </button>
+                    <button type="button" onclick="usePrompt(this)" class="suggested-prompt text-left px-4 py-3 bg-dark-800/50 border border-white/10 rounded-xl text-gray-300 hover:bg-dark-700 hover:border-purple-500/30 transition-all group">
+                        <span class="text-purple-400 mr-2">💬</span>
+                        <span>What are the main topics people are talking about?</span>
+                    </button>
+                    {% endif %}
+                    {% if agent.can_read_artifacts %}
+                    <button type="button" onclick="usePrompt(this)" class="suggested-prompt text-left px-4 py-3 bg-dark-800/50 border border-white/10 rounded-xl text-gray-300 hover:bg-dark-700 hover:border-purple-500/30 transition-all group">
+                        <span class="text-blue-400 mr-2">✅</span>
+                        <span>What tasks are currently open or in progress?</span>
+                    </button>
+                    <button type="button" onclick="usePrompt(this)" class="suggested-prompt text-left px-4 py-3 bg-dark-800/50 border border-white/10 rounded-xl text-gray-300 hover:bg-dark-700 hover:border-purple-500/30 transition-all group">
+                        <span class="text-blue-400 mr-2">📋</span>
+                        <span>Show me recent decisions and their status</span>
+                    </button>
+                    {% endif %}
+                    {% if agent.can_read_notes %}
+                    <button type="button" onclick="usePrompt(this)" class="suggested-prompt text-left px-4 py-3 bg-dark-800/50 border border-white/10 rounded-xl text-gray-300 hover:bg-dark-700 hover:border-purple-500/30 transition-all group">
+                        <span class="text-green-400 mr-2">📝</span>
+                        <span>What notes are shared in this workspace?</span>
+                    </button>
+                    {% endif %}
+                    <!-- Always show general prompts -->
+                    <button type="button" onclick="usePrompt(this)" class="suggested-prompt text-left px-4 py-3 bg-dark-800/50 border border-white/10 rounded-xl text-gray-300 hover:bg-dark-700 hover:border-purple-500/30 transition-all group">
+                        <span class="text-yellow-400 mr-2">💡</span>
+                        <span>Help me brainstorm ideas for a new project</span>
+                    </button>
+                    <button type="button" onclick="usePrompt(this)" class="suggested-prompt text-left px-4 py-3 bg-dark-800/50 border border-white/10 rounded-xl text-gray-300 hover:bg-dark-700 hover:border-purple-500/30 transition-all group">
+                        <span class="text-cyan-400 mr-2">🤖</span>
+                        <span>What can you help me with?</span>
+                    </button>
+                </div>
+            </div>
         </div>
         {% else %}
         {% include "ai/partials/chat_messages.html" %}
@@ -183,6 +225,15 @@ function scrollToBottom() {
 function autoResize(textarea) {
     textarea.style.height = 'auto';
     textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+}
+
+function usePrompt(button) {
+    // Get the prompt text (second span, after the emoji)
+    const promptText = button.querySelector('span:last-child').textContent.trim();
+    const textarea = document.querySelector('textarea[name="message"]');
+    textarea.value = promptText;
+    textarea.focus();
+    autoResize(textarea);
 }
 
 function handleKeyDown(event, textarea) {

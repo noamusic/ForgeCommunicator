@@ -517,7 +517,7 @@ class AIAgentService:
             capabilities.append("view tasks, decisions, and ideas")
         if agent.can_read_notes:
             capabilities.append("access workspace notes")
-        if agent.can_summarize:
+        if agent.capabilities.get("summarize"):
             capabilities.append("create summaries and insights")
         
         if capabilities:
