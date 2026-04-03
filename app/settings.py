@@ -190,6 +190,20 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = True
     smtp_from_email: str | None = None  # Defaults to brand_support_email
     smtp_from_name: str | None = None  # Defaults to brand_name
+
+    @field_validator("smtp_port", mode="before")
+    @classmethod
+    def empty_str_to_default_port(cls, v):
+        if v == "" or v is None:
+            return 587
+        return v
+
+    @field_validator("smtp_use_tls", mode="before")
+    @classmethod
+    def empty_str_to_default_tls(cls, v):
+        if v == "" or v is None:
+            return True
+        return v
     
     # Email configuration (API providers - alternative to SMTP)
     sendgrid_api_key: str | None = None
