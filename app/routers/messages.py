@@ -92,9 +92,14 @@ async def get_messages(
     
     if after:
         query = query.where(Message.id > after)
-    
-    query = query.order_by(Message.created_at.desc()).limit(limit)
-    
+
+    # Order by id (monotonic, immune to backdated external/bridged timestamps)
+    # both for the LIMIT window and the final display order, so polling and
+    # catch-up fetches can't return messages in a different relative order
+    # than they were sent — that mismatch was causing messages to render
+    # above/below where they belonged once external messages were involved.
+    query = query.order_by(Message.id.desc()).limit(limit)
+
     result = await db.execute(query)
     messages = list(reversed(result.scalars().all()))
     

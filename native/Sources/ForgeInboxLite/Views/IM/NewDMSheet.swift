@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Rail sheet for starting a new DM: pick a workspace, pick a member.
+/// Rail sheet for starting a new DM or group DM: pick a workspace, pick member(s).
 struct NewDMSheet: View {
     @ObservedObject var store: NativeCommunicatorStore
     var onOpenConversation: (CommunicatorConversation) -> Void
@@ -15,6 +15,10 @@ struct NewDMSheet: View {
     @State private var creatingDMForUserID: Int?
     @State private var profileUserID: Int?
 
+    @State private var isGroupMode = false
+    @State private var selectedUserIDs: Set<Int> = []
+    @State private var isCreatingGroup = false
+
     private var filteredMembers: [CommunicatorMemberProfile] {
         guard !searchText.isEmpty else { return members }
         let q = searchText.lowercased()
@@ -26,11 +30,15 @@ struct NewDMSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             header
+            modeToggle
             workspacePicker
             searchBar
             memberList
+            if isGroupMode {
+                groupFooter
+            }
         }
-        .frame(width: 300, height: 420)
+        .frame(width: 300, height: isGroupMode ? 470 : 420)
         .background(ForgeTheme.dark900)
         .onAppear {
             if selectedWorkspaceID == nil {
@@ -44,7 +52,7 @@ struct NewDMSheet: View {
 
     private var header: some View {
         HStack {
-            Text("New Message")
+            Text(isGroupMode ? "New Group" : "New Message")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(ForgeTheme.white)
             Spacer()
@@ -62,6 +70,33 @@ struct NewDMSheet: View {
         .background(ForgeTheme.dark950)
     }
 
+    private var modeToggle: some View {
+        HStack(spacing: 0) {
+            modeButton(title: "Direct Message", selected: !isGroupMode) {
+                isGroupMode = false
+                selectedUserIDs = []
+            }
+            modeButton(title: "Group", selected: isGroupMode) {
+                isGroupMode = true
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+    }
+
+    private func modeButton(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(selected ? .white : ForgeTheme.silver.opacity(0.55))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(selected ? ForgeTheme.primary : ForgeTheme.dark700.opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var workspacePicker: some View {
         HStack(spacing: 8) {
             Text("Workspace")
@@ -72,6 +107,7 @@ struct NewDMSheet: View {
                 get: { selectedWorkspaceID ?? -1 },
                 set: { newValue in
                     selectedWorkspaceID = newValue == -1 ? nil : newValue
+                    selectedUserIDs = []
                     loadMembers()
                 }
             )) {
@@ -147,8 +183,47 @@ struct NewDMSheet: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private var groupFooter: some View {
+        VStack(spacing: 0) {
+            Divider().background(ForgeTheme.glassBorder)
+            HStack {
+                Text(selectedUserIDs.isEmpty ? "Select people to start a group" : "\(selectedUserIDs.count) selected")
+                    .font(.system(size: 11))
+                    .foregroundStyle(ForgeTheme.silver.opacity(0.55))
+                Spacer()
+                Button {
+                    startGroup()
+                } label: {
+                    HStack(spacing: 6) {
+                        if isCreatingGroup {
+                            ProgressView().controlSize(.mini)
+                        }
+                        Text("Start Group")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(selectedUserIDs.count >= 2 ? ForgeTheme.primary : ForgeTheme.primary.opacity(0.35))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(selectedUserIDs.count < 2 || isCreatingGroup)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+        }
+        .background(ForgeTheme.dark950)
+    }
+
     private func memberRow(_ member: CommunicatorMemberProfile) -> some View {
         HStack(spacing: 8) {
+            if isGroupMode {
+                Image(systemName: selectedUserIDs.contains(member.id) ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 15))
+                    .foregroundStyle(selectedUserIDs.contains(member.id) ? ForgeTheme.primary : ForgeTheme.silver.opacity(0.3))
+            }
+
             ProfileInitialsAvatar(name: member.displayName, size: 30)
 
             VStack(alignment: .leading, spacing: 1) {
@@ -164,31 +239,33 @@ struct NewDMSheet: View {
 
             Spacer()
 
-            // Profile peek
-            Button {
-                profileUserID = member.id
-            } label: {
-                Image(systemName: "person.crop.circle")
-                    .font(.system(size: 13))
-                    .foregroundStyle(ForgeTheme.silver.opacity(0.5))
-            }
-            .buttonStyle(.plain)
-            .help("View profile")
-            .popover(isPresented: Binding(
-                get: { profileUserID == member.id },
-                set: { if !$0 { profileUserID = nil } }
-            ), arrowEdge: .trailing) {
-                UserProfileView(
-                    store: store,
-                    userID: member.id,
-                    fallbackName: member.displayName,
-                    workspaceID: selectedWorkspaceID,
-                    onOpenConversation: { conversation in
-                        profileUserID = nil
-                        dismiss()
-                        onOpenConversation(conversation)
-                    }
-                )
+            if !isGroupMode {
+                // Profile peek (DM mode only — group mode taps toggle selection)
+                Button {
+                    profileUserID = member.id
+                } label: {
+                    Image(systemName: "person.crop.circle")
+                        .font(.system(size: 13))
+                        .foregroundStyle(ForgeTheme.silver.opacity(0.5))
+                }
+                .buttonStyle(.plain)
+                .help("View profile")
+                .popover(isPresented: Binding(
+                    get: { profileUserID == member.id },
+                    set: { if !$0 { profileUserID = nil } }
+                ), arrowEdge: .trailing) {
+                    UserProfileView(
+                        store: store,
+                        userID: member.id,
+                        fallbackName: member.displayName,
+                        workspaceID: selectedWorkspaceID,
+                        onOpenConversation: { conversation in
+                            profileUserID = nil
+                            dismiss()
+                            onOpenConversation(conversation)
+                        }
+                    )
+                }
             }
 
             if creatingDMForUserID == member.id {
@@ -198,10 +275,24 @@ struct NewDMSheet: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .contentShape(Rectangle())
-        .onTapGesture { startDM(with: member) }
+        .onTapGesture {
+            if isGroupMode {
+                toggleSelection(member.id)
+            } else {
+                startDM(with: member)
+            }
+        }
     }
 
     // MARK: - Actions
+
+    private func toggleSelection(_ userID: Int) {
+        if selectedUserIDs.contains(userID) {
+            selectedUserIDs.remove(userID)
+        } else {
+            selectedUserIDs.insert(userID)
+        }
+    }
 
     private func loadMembers() {
         guard let workspaceID = selectedWorkspaceID else { return }
@@ -229,6 +320,24 @@ struct NewDMSheet: View {
                     onOpenConversation(conversation)
                 } else {
                     errorMessage = "DM created but conversation not found — try refreshing."
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func startGroup() {
+        guard let workspaceID = selectedWorkspaceID, selectedUserIDs.count >= 2, !isCreatingGroup else { return }
+        isCreatingGroup = true
+        Task {
+            defer { isCreatingGroup = false }
+            do {
+                if let conversation = try await store.openDM(workspaceID: workspaceID, userIDs: Array(selectedUserIDs)) {
+                    dismiss()
+                    onOpenConversation(conversation)
+                } else {
+                    errorMessage = "Group created but conversation not found — try refreshing."
                 }
             } catch {
                 errorMessage = error.localizedDescription

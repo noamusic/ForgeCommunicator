@@ -13,16 +13,33 @@ struct FloatingChatWindowView: View {
     @State private var showCallPicker = false
     @State private var showProfile = false
 
+    /// Bumped on every reload; a reload only commits its result if it's
+    /// still the most recent one requested. Without this, onAppear, the
+    /// poll-triggered onChange, sendMessage, and startJitsiCall could each
+    /// fire an independent reload and the slowest response — not the
+    /// newest — would win, making just-sent messages flash in and vanish.
+    @State private var loadGeneration = 0
+
+    /// Always resolves this window's conversation by channelID from the
+    /// store's current list, falling back to the value captured at window
+    /// creation. `conversation` itself is a `let` snapshot and never
+    /// updates — using this instead for chrome (name, members, workspace)
+    /// avoids the window showing a stale identity if the server-side
+    /// channel this ID maps to ever changes underneath it.
+    private var liveConversation: CommunicatorConversation {
+        store.conversations.first(where: { $0.channelID == conversation.channelID }) ?? conversation
+    }
+
     /// For DMs, the other participant (whose profile the avatar opens).
     private var profilePartner: CommunicatorUserProfile? {
-        guard conversation.isDM else { return nil }
-        return conversation.members.first(where: { $0.id != store.currentUserID })
+        guard liveConversation.isDM else { return nil }
+        return liveConversation.members.first(where: { $0.id != store.currentUserID })
     }
 
     // Latest message id for this channel as seen by the 5s poll — used to
     // refresh this window when new messages arrive.
     private var liveLastMessageID: Int {
-        store.conversations.first(where: { $0.channelID == conversation.channelID })?.lastMessage?.id ?? 0
+        liveConversation.lastMessage?.id ?? 0
     }
 
     var body: some View {
@@ -34,19 +51,27 @@ struct FloatingChatWindowView: View {
         .background(ForgeTheme.dark900)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
-            Task {
-                localMessages = (try? await store.loadMessages(for: conversation.channelID)) ?? []
-                try? await store.markRead(for: conversation.channelID)
-            }
+            reloadMessages()
+            Task { try? await store.markRead(for: conversation.channelID) }
         }
         .onChange(of: liveLastMessageID) { newID in
             // A new message arrived for this conversation — pull it into this
             // window and mark read since the window is open.
             guard newID > (localMessages.last?.id ?? 0) else { return }
-            Task {
-                localMessages = (try? await store.loadMessages(for: conversation.channelID)) ?? localMessages
-                try? await store.markRead(for: conversation.channelID)
-            }
+            reloadMessages()
+            Task { try? await store.markRead(for: conversation.channelID) }
+        }
+    }
+
+    /// Reloads messages for this conversation, discarding the result if a
+    /// newer reload was requested in the meantime (see loadGeneration).
+    private func reloadMessages() {
+        loadGeneration += 1
+        let generation = loadGeneration
+        Task {
+            guard let fetched = try? await store.loadMessages(for: conversation.channelID) else { return }
+            guard generation == loadGeneration else { return }  // a newer reload already superseded this one
+            localMessages = fetched
         }
     }
 
@@ -68,7 +93,7 @@ struct FloatingChatWindowView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .help(profilePartner != nil ? "View profile" : conversation.name)
+                .help(profilePartner != nil ? "View profile" : liveConversation.name)
                 .popover(isPresented: $showProfile, arrowEdge: .bottom) {
                     if let partner = profilePartner {
                         UserProfileView(
@@ -79,12 +104,12 @@ struct FloatingChatWindowView: View {
                     }
                 }
 
-                Text(conversation.name)
+                Text(liveConversation.name)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(ForgeTheme.silver)
                     .lineLimit(1)
 
-                if let platform = conversation.bridgedPlatform {
+                if let platform = liveConversation.bridgedPlatform {
                     platformPill(platform)
                 }
 
@@ -139,7 +164,7 @@ struct FloatingChatWindowView: View {
             CallPickerView(
                 conversation: conversation,
                 onStartJitsi: { startJitsiCall() },
-                onStartFaceTime: conversation.isDM ? { startFaceTimeCall() } : nil
+                onStartFaceTime: liveConversation.isDM ? { startFaceTimeCall() } : nil
             )
         }
     }
@@ -147,7 +172,7 @@ struct FloatingChatWindowView: View {
     private func jitsiRoomName() -> String {
         // Stable, collision-resistant room name tied to this specific channel.
         // Prefix with "Forge" so it's recognisable in the Jitsi UI.
-        "Forge-\(conversation.workspaceID)-\(conversation.channelID)"
+        "Forge-\(liveConversation.workspaceID)-\(conversation.channelID)"
     }
 
     private func jitsiURL() -> URL {
@@ -160,17 +185,18 @@ struct FloatingChatWindowView: View {
         let linkText = "📹 Join video call: \(url.absoluteString)"
         // Send the link as a message so the other person can join.
         Task {
-            try? await store.sendMessage(to: conversation.channelID, body: linkText)
-            localMessages = (try? await store.loadMessages(for: conversation.channelID)) ?? localMessages
+            if let sent = try? await store.sendMessage(to: conversation.channelID, body: linkText) {
+                appendSentMessage(sent)
+            }
         }
         NSWorkspace.shared.open(url)
     }
 
     private func startFaceTimeCall() {
         showCallPicker = false
-        // Use conversation.name as the FaceTime address — works when it's an email.
+        // Use liveConversation.name as the FaceTime address — works when it's an email.
         // For display-name DMs the user will see FaceTime's own contact lookup.
-        let address = conversation.name
+        let address = liveConversation.name
             .trimmingCharacters(in: .whitespaces)
             .addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? ""
         if let url = URL(string: "facetime://\(address)") {
@@ -264,7 +290,7 @@ struct FloatingChatWindowView: View {
             HStack(alignment: .bottom, spacing: 8) {
                 ZStack(alignment: .topLeading) {
                     if draft.isEmpty {
-                        Text("Message \(conversation.name)...")
+                        Text("Message \(liveConversation.name)...")
                             .font(.system(size: 13))
                             .foregroundStyle(ForgeTheme.silver.opacity(0.35))
                             .padding(.top, 8)
@@ -333,15 +359,27 @@ struct FloatingChatWindowView: View {
 
         draft = ""
         Task {
-            try? await store.sendMessage(to: conversation.channelID, body: body)
-            localMessages = (try? await store.loadMessages(for: conversation.channelID)) ?? localMessages
+            if let sent = try? await store.sendMessage(to: conversation.channelID, body: body) {
+                appendSentMessage(sent)
+            }
         }
+    }
+
+    /// Appends a message this window just sent, in id order, without an
+    /// extra network round trip. A later poll-triggered reload will still
+    /// pick up anything sent from elsewhere (another window, another
+    /// device), but the local send is reflected immediately and can't be
+    /// raced out by a slower concurrent reload.
+    private func appendSentMessage(_ message: CommunicatorMessage) {
+        guard !localMessages.contains(where: { $0.id == message.id }) else { return }
+        localMessages.append(message)
+        localMessages.sort { $0.id < $1.id }
     }
 
     // MARK: - Helpers
 
     private func conversationAvatar(size: CGFloat) -> some View {
-        let initials = conversation.name
+        let initials = liveConversation.name
             .split(separator: " ")
             .prefix(2)
             .compactMap { $0.first.map(String.init) }

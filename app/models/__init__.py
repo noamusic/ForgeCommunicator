@@ -21,6 +21,7 @@ from app.models.user_session import UserSession
 from app.models.attachment import Attachment, AttachmentType
 from app.models.reaction import MessageReaction
 from app.models.api_token import APIToken
+from app.models.agent_integration import AgentIntegration
 from app.models.ai_agent import (
     AIAgent,
     AIConversation,
@@ -65,6 +66,7 @@ __all__ = [
     "Attachment",
     "AttachmentType",
     "MessageReaction",
+    "AgentIntegration",
     "AIAgent",
     "AIConversation",
     "AIMessage",

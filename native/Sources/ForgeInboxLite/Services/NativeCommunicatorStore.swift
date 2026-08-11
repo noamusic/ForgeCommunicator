@@ -285,9 +285,14 @@ final class NativeCommunicatorStore: ObservableObject {
 
     /// Create (or find) a DM with the given user and return the conversation for it.
     func openDM(workspaceID: Int, userID: Int) async throws -> CommunicatorConversation? {
-        guard let token else { return nil }
+        try await openDM(workspaceID: workspaceID, userIDs: [userID])
+    }
+
+    /// Create (or find) a DM/group-DM with the given users and return the conversation for it.
+    func openDM(workspaceID: Int, userIDs: [Int]) async throws -> CommunicatorConversation? {
+        guard let token, !userIDs.isEmpty else { return nil }
         let client = try CommunicatorAPIClient(serverURL: serverURL)
-        let channel = try await client.createDM(token: token, workspaceID: workspaceID, userIDs: [userID])
+        let channel = try await client.createDM(token: token, workspaceID: workspaceID, userIDs: userIDs)
         try await refreshAll()
         return conversations.first(where: { $0.channelID == channel.id })
     }
@@ -304,15 +309,25 @@ final class NativeCommunicatorStore: ObservableObject {
         guard let token else { return [] }
         guard let conversation = conversations.first(where: { $0.channelID == conversationID }) else { return [] }
         let client = try CommunicatorAPIClient(serverURL: serverURL)
-        return try await client.listMessages(token: token, workspaceID: conversation.workspaceID, channelID: conversation.channelID)
+        let messages = try await client.listMessages(token: token, workspaceID: conversation.workspaceID, channelID: conversation.channelID)
+        // Defensively sort ascending: the server should already return
+        // send order, but external/bridged messages can carry a backdated
+        // timestamp, and trusting raw response order caused messages to
+        // render out of order in floating chat windows.
+        return messages.sorted { $0.id < $1.id }
     }
 
-    func sendMessage(to conversationID: Int, body: String) async throws {
-        guard let token else { return }
-        guard let conversation = conversations.first(where: { $0.channelID == conversationID }) else { return }
+    /// Sends a message and returns it so the caller can append it locally
+    /// instead of doing a second round-trip reload (which raced against
+    /// polling and could make the just-sent message flash in and out).
+    @discardableResult
+    func sendMessage(to conversationID: Int, body: String) async throws -> CommunicatorMessage? {
+        guard let token else { return nil }
+        guard let conversation = conversations.first(where: { $0.channelID == conversationID }) else { return nil }
         let client = try CommunicatorAPIClient(serverURL: serverURL)
-        _ = try await client.sendMessage(token: token, workspaceID: conversation.workspaceID, channelID: conversation.channelID, body: body)
+        let sent = try await client.sendMessage(token: token, workspaceID: conversation.workspaceID, channelID: conversation.channelID, body: body)
         try await client.markRead(token: token, workspaceID: conversation.workspaceID, channelID: conversation.channelID)
+        return sent
     }
 
     var selectedConversation: CommunicatorConversation? {

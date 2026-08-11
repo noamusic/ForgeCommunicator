@@ -801,7 +801,12 @@ async def list_messages(
     if after:
         query = query.where(Message.id > after)
 
-    query = query.order_by(Message.created_at.desc()).limit(limit)
+    # Order by id, not created_at: bridged/external messages can carry a
+    # backdated created_at from the original platform, which desynced the
+    # WHERE-by-id cursor from the ORDER-by-created_at result set and made
+    # messages render out of order (or drop out of the LIMIT window) in the
+    # native app.
+    query = query.order_by(Message.id.desc()).limit(limit)
     result = await db.execute(query)
     messages = list(reversed(result.scalars().all()))
 
