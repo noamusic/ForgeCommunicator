@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.deps import CurrentUser, DBSession, WorkspaceCreator
@@ -57,16 +57,30 @@ async def list_workspaces(
     # Calculate unread counts per workspace
     workspace_unread_counts = {}
     for ws in workspaces:
-        # Get all channels in this workspace the user can access
+        # Get channels in this workspace the user can actually see: public
+        # channels, plus private channels/DMs they're a member of. Without
+        # this scoping, private channels/DMs belonging to other users were
+        # counted as permanently unread — the user can never "read" a
+        # channel they were never added to, so the badge could never clear.
         result = await db.execute(
             select(Channel.id)
             .where(
                 Channel.workspace_id == ws.id,
                 Channel.is_archived == False,
+                or_(
+                    Channel.is_private == False,
+                    and_(
+                        Channel.is_private == True,
+                        Channel.id.in_(
+                            select(ChannelMembership.channel_id)
+                            .where(ChannelMembership.user_id == user.id)
+                        )
+                    )
+                )
             )
         )
         channel_ids = [row[0] for row in result.fetchall()]
-        
+
         if not channel_ids:
             workspace_unread_counts[ws.id] = 0
             continue
@@ -170,12 +184,26 @@ async def get_total_unread_count(
     if not workspace_ids:
         return JSONResponse({"unread_count": 0})
     
-    # Get all channels across all workspaces
+    # Get channels across all workspaces the user can actually see (public,
+    # or private/DM channels they're a member of) — same scoping as the
+    # per-workspace badge, for the same reason: an inaccessible private
+    # channel can never be marked read, so including it here made the
+    # global badge permanently stuck too.
     result = await db.execute(
         select(Channel.id)
         .where(
             Channel.workspace_id.in_(workspace_ids),
             Channel.is_archived == False,
+            or_(
+                Channel.is_private == False,
+                and_(
+                    Channel.is_private == True,
+                    Channel.id.in_(
+                        select(ChannelMembership.channel_id)
+                        .where(ChannelMembership.user_id == user.id)
+                    )
+                )
+            )
         )
     )
     channel_ids = [row[0] for row in result.fetchall()]
@@ -248,11 +276,23 @@ async def mark_workspace_all_read(
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="Not a member of this workspace")
     
-    # Get all channels in workspace
+    # Only mark channels the user can actually see as read — a private
+    # channel/DM they're not a member of should neither count toward their
+    # unread badge nor get a membership row created here as a side effect.
     result = await db.execute(
         select(Channel.id).where(
             Channel.workspace_id == workspace_id,
             Channel.is_archived == False,
+            or_(
+                Channel.is_private == False,
+                and_(
+                    Channel.is_private == True,
+                    Channel.id.in_(
+                        select(ChannelMembership.channel_id)
+                        .where(ChannelMembership.user_id == user.id)
+                    )
+                )
+            )
         )
     )
     channel_ids = [row[0] for row in result.fetchall()]
