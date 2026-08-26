@@ -22,6 +22,7 @@ from app.models.attachment import Attachment, AttachmentType
 from app.models.reaction import MessageReaction
 from app.models.api_token import APIToken
 from app.models.agent_integration import AgentIntegration
+from app.models.agent_handoff import AgentHandoff, HandoffStatus
 from app.models.ai_agent import (
     AIAgent,
     AIConversation,
@@ -67,6 +68,8 @@ __all__ = [
     "AttachmentType",
     "MessageReaction",
     "AgentIntegration",
+    "AgentHandoff",
+    "HandoffStatus",
     "AIAgent",
     "AIConversation",
     "AIMessage",

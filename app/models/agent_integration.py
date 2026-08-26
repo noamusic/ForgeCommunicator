@@ -61,6 +61,12 @@ class AgentIntegration(Base, TimestampMixin):
     # Scope: NULL means "all channels in this workspace"; otherwise a list of channel IDs
     allowed_channel_ids: Mapped[list[int] | None] = mapped_column(ARRAY(Integer), nullable=True)
 
+    # If set, Forge POSTs an event payload here the moment this agent is
+    # mentioned or receives an approved hand-off (see app/routers/agents.py
+    # notify_agent). If unset, the agent is expected to poll
+    # GET /agents/v1/inbox instead. Both may be used interchangeably.
+    webhook_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
