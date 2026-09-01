@@ -19,7 +19,7 @@
                 hx-post="/workspaces/{{ workspace.id }}/mark-all-read"
                 hx-swap="none"
                 hx-on::after-request="window.notificationCenter.syncWithServer(); window.location.reload();"
-                class="w-full text-xs text-gray-500 hover:text-gray-300 hover:bg-white/5 rounded px-2 py-1 transition-colors flex items-center justify-center space-x-1"
+                class="w-full text-xs text-gray-500 hover:text-forge-white hover:bg-white/5 rounded px-2 py-1 transition-colors flex items-center justify-center space-x-1"
                 title="Mark all messages as read in this workspace">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -31,9 +31,9 @@
     <!-- Channels Section -->
     <div id="channels-section" class="mb-4">
         <div class="flex items-center justify-between px-2 mb-2">
-            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Channels</h3>
-            <a href="/workspaces/{{ workspace.id }}/channels/new" 
-               class="text-gray-400 hover:text-blue-400 transition-colors"
+            <h3 class="text-xs font-semibold text-forge-silver/50 uppercase tracking-wider font-['Space_Grotesk']">Channels</h3>
+            <a href="/workspaces/{{ workspace.id }}/channels/new"
+               class="text-gray-400 hover:text-forge-blue transition-colors"
                title="Create channel">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -48,18 +48,18 @@
                id="channel-link-{{ ch.id }}"
                data-channel-id="{{ ch.id }}"
                class="channel-link group flex items-center px-2 py-1.5 text-sm font-medium rounded-lg transition-colors
-                      {% if current_sidebar_channel_id == ch.id %}bg-blue-500/20 text-blue-400 border border-blue-500/30{% elif sidebar_unread_channels.get(ch.id, 0) > 0 %}text-white font-bold{% else %}text-gray-300 hover:bg-white/5 hover:text-white{% endif %}">
-                <span class="mr-2 {% if current_sidebar_channel_id == ch.id %}text-blue-400{% endif %}">#</span>
+                      {% if current_sidebar_channel_id == ch.id %}channel-active{% elif sidebar_unread_channels.get(ch.id, 0) > 0 %}channel-unread{% else %}channel-default{% endif %}">
+                <span class="mr-2 {% if current_sidebar_channel_id == ch.id %}text-forge-blue{% endif %}">#</span>
                 <span class="truncate flex-1">{{ ch.name }}</span>
                 {% if sidebar_unread_channels.get(ch.id, 0) > 0 and current_sidebar_channel_id != ch.id %}
-                <span class="unread-badge min-w-[18px] h-[18px] bg-blue-500 rounded-full text-white text-xs font-bold flex items-center justify-center px-1">
+                <span class="unread-badge forge-badge forge-badge-unread rounded-full">
                     {{ sidebar_unread_channels.get(ch.id) if sidebar_unread_channels.get(ch.id, 0) < 100 else '99+' }}
                 </span>
                 {% endif %}
             </a>
             {% endif %}
             {% endfor %}
-            
+
             <!-- Private channels -->
             {% set private_channels = channels|selectattr('is_private')|rejectattr('is_dm')|list %}
             {% if private_channels %}
@@ -69,13 +69,13 @@
                id="channel-link-{{ ch.id }}"
                data-channel-id="{{ ch.id }}"
                class="channel-link group flex items-center px-2 py-1.5 text-sm font-medium rounded-lg transition-colors
-                      {% if current_sidebar_channel_id == ch.id %}bg-blue-500/20 text-blue-400 border border-blue-500/30{% elif sidebar_unread_channels.get(ch.id, 0) > 0 %}text-white font-bold{% else %}text-gray-300 hover:bg-white/5 hover:text-white{% endif %}">
+                      {% if current_sidebar_channel_id == ch.id %}channel-active{% elif sidebar_unread_channels.get(ch.id, 0) > 0 %}channel-unread{% else %}channel-default{% endif %}">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                 </svg>
                 <span class="truncate flex-1">{{ ch.name }}</span>
                 {% if sidebar_unread_channels.get(ch.id, 0) > 0 and current_sidebar_channel_id != ch.id %}
-                <span class="unread-badge min-w-[18px] h-[18px] bg-blue-500 rounded-full text-white text-xs font-bold flex items-center justify-center px-1">
+                <span class="unread-badge forge-badge forge-badge-unread rounded-full">
                     {{ sidebar_unread_channels.get(ch.id) if sidebar_unread_channels.get(ch.id, 0) < 100 else '99+' }}
                 </span>
                 {% endif %}
@@ -183,9 +183,9 @@
     <!-- Direct Messages Section -->
     <div id="dm-section" class="mb-4">
         <div class="flex items-center justify-between px-2 mb-2">
-            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Direct Messages</h3>
+            <h3 class="text-xs font-semibold text-forge-silver/50 uppercase tracking-wider font-['Space_Grotesk']">Direct Messages</h3>
             <button type="button" onclick="openDMModal()"
-                    class="text-gray-400 hover:text-blue-400 transition-colors"
+                    class="text-gray-400 hover:text-forge-blue transition-colors"
                     title="Start a DM">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -204,13 +204,13 @@
                id="channel-link-{{ ch.id }}"
                data-channel-id="{{ ch.id }}"
                class="channel-link group flex items-center px-2 py-1.5 text-sm font-medium rounded-lg transition-colors
-                      {% if current_sidebar_channel_id == ch.id %}bg-blue-500/20 text-blue-400 border border-blue-500/30{% elif sidebar_unread_channels.get(ch.id, 0) > 0 %}text-white font-bold{% else %}text-gray-300 hover:bg-white/5 hover:text-white{% endif %}">
-                <div class="w-5 h-5 rounded-full {% if sidebar_unread_channels.get(ch.id, 0) > 0 %}bg-blue-500{% else %}bg-green-500/70{% endif %} flex items-center justify-center mr-2">
+                      {% if current_sidebar_channel_id == ch.id %}channel-active{% elif sidebar_unread_channels.get(ch.id, 0) > 0 %}channel-unread{% else %}channel-default{% endif %}">
+                <div class="w-5 h-5 rounded-full {% if sidebar_unread_channels.get(ch.id, 0) > 0 %}bg-forge-blue/25 border border-forge-blue/40{% else %}bg-forge-green/25 border border-forge-green/40{% endif %} flex items-center justify-center mr-2">
                     <span class="text-white text-xs">{{ ch.name[0] }}</span>
                 </div>
                 <span class="truncate flex-1">{{ ch.name }}</span>
                 {% if sidebar_unread_channels.get(ch.id, 0) > 0 and current_sidebar_channel_id != ch.id %}
-                <span class="unread-badge min-w-[18px] h-[18px] bg-blue-500 rounded-full text-white text-xs font-bold flex items-center justify-center px-1">
+                <span class="unread-badge forge-badge forge-badge-unread rounded-full">
                     {{ sidebar_unread_channels.get(ch.id) if sidebar_unread_channels.get(ch.id, 0) < 100 else '99+' }}
                 </span>
                 {% endif %}
@@ -280,9 +280,9 @@
     <!-- AI Agents Section -->
     <div id="ai-section" class="mb-4">
         <div class="flex items-center justify-between px-2 mb-2">
-            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">AI Agents</h3>
-            <a href="/ai/agents/new" 
-               class="text-gray-400 hover:text-purple-400 transition-colors"
+            <h3 class="text-xs font-semibold text-forge-silver/50 uppercase tracking-wider font-['Space_Grotesk']">AI Agents</h3>
+            <a href="/ai/agents/new"
+               class="text-gray-400 hover:text-forge-blue transition-colors"
                title="Create AI Agent">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -292,15 +292,15 @@
         
         <nav class="space-y-1">
             <a href="/ai/agents"
-               class="group flex items-center px-2 py-1.5 text-sm font-medium rounded-lg transition-colors text-gray-300 hover:bg-white/5 hover:text-white">
-                <svg class="w-4 h-4 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               class="group flex items-center px-2 py-1.5 text-sm font-medium rounded-lg transition-colors text-forge-silver/70 hover:bg-forge-white/5 hover:text-forge-white">
+                <svg class="w-4 h-4 mr-2" style="color: var(--forge-violet)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
                 </svg>
                 <span class="truncate flex-1">My Agents</span>
             </a>
             <a href="/ai/conversations"
-               class="group flex items-center px-2 py-1.5 text-sm font-medium rounded-lg transition-colors text-gray-300 hover:bg-white/5 hover:text-white">
-                <svg class="w-4 h-4 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               class="group flex items-center px-2 py-1.5 text-sm font-medium rounded-lg transition-colors text-forge-silver/70 hover:bg-forge-white/5 hover:text-forge-white">
+                <svg class="w-4 h-4 mr-2" style="color: var(--forge-violet)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                 </svg>
                 <span class="truncate flex-1">Conversations</span>
@@ -311,7 +311,7 @@
     <!-- Settings link -->
     <div class="pt-4 border-t border-white/10">
         <a href="/workspaces/{{ workspace.id }}/settings"
-           class="flex items-center px-2 py-1.5 text-sm text-gray-400 hover:text-blue-400 rounded-lg hover:bg-white/5 transition-colors">
+           class="flex items-center px-2 py-1.5 text-sm text-gray-400 hover:text-forge-blue rounded-lg hover:bg-white/5 transition-colors">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>

@@ -1,6 +1,12 @@
 import SwiftUI
 import WebKit
 
+extension Notification.Name {
+    /// Posted by WebTitleNotificationTracker when a WKWebView source gains unread messages.
+    /// userInfo keys: "sourceID" (UUID), "sourceName" (String), "unreadCount" (Int), "body" (String)
+    static let forgeWebSourceUnread = Notification.Name("forge.webSourceUnread")
+}
+
 final class WebSessionManager {
     private var webViews: [UUID: WKWebView] = [:]
     private var delegates: [UUID: SessionNavigationDelegate] = [:]
@@ -20,6 +26,15 @@ final class WebSessionManager {
         config.preferences.isTextInteractionEnabled = true
         config.allowsAirPlayForMediaPlayback = false
         config.mediaTypesRequiringUserActionForPlayback = []
+
+        if account.type == .telegram {
+            let telegramDesktopLayoutScript = WKUserScript(
+                source: Self.telegramDesktopLayoutScript,
+                injectionTime: .atDocumentEnd,
+                forMainFrameOnly: true
+            )
+            config.userContentController.addUserScript(telegramDesktopLayoutScript)
+        }
 
         let view = WKWebView(frame: .zero, configuration: config)
         view.allowsBackForwardNavigationGestures = true
@@ -42,6 +57,48 @@ final class WebSessionManager {
         webViews[account.id] = view
         return view
     }
+
+        private static let telegramDesktopLayoutScript = """
+        (function() {
+            function enforceDesktopWidth() {
+                try {
+                    var root = document.documentElement;
+                    var body = document.body;
+                    if (root) {
+                        root.style.maxWidth = 'none';
+                        root.style.width = '100%';
+                    }
+                    if (body) {
+                        body.style.maxWidth = 'none';
+                        body.style.width = '100%';
+                        body.style.minWidth = '0';
+                    }
+
+                    var selectors = [
+                        '#auth-pages',
+                        '.auth-pages',
+                        '.auth-pages__container',
+                        '.page_wrap',
+                        '.page-main',
+                        '.page-content'
+                    ];
+
+                    selectors.forEach(function(sel) {
+                        document.querySelectorAll(sel).forEach(function(el) {
+                            el.style.maxWidth = 'none';
+                            el.style.width = '100%';
+                            el.style.minWidth = '0';
+                        });
+                    });
+                } catch (_) {}
+            }
+
+            enforceDesktopWidth();
+            setTimeout(enforceDesktopWidth, 150);
+            setTimeout(enforceDesktopWidth, 500);
+            setTimeout(enforceDesktopWidth, 1200);
+        })();
+        """
 
     func removeWebsiteData(for account: Account, completion: (() -> Void)? = nil) {
         webViews.removeValue(forKey: account.id)
@@ -216,7 +273,22 @@ private final class WebTitleNotificationTracker {
         let unread = unreadCount(from: title)
 
         if unread == 0 {
-            lastUnreadCount = 0
+            // If we previously had unread messages, post a clear so the rail badge resets.
+            if lastUnreadCount > 0 {
+                lastUnreadCount = 0
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(
+                        name: .forgeWebSourceUnread,
+                        object: nil,
+                        userInfo: [
+                            "sourceID": self.source.id,
+                            "sourceName": self.source.displayName,
+                            "unreadCount": 0,
+                            "body": ""
+                        ]
+                    )
+                }
+            }
             return
         }
 
@@ -245,6 +317,20 @@ private final class WebTitleNotificationTracker {
             body: body,
             dedupeHint: "title:\(unread):\(body)"
         )
+
+        DispatchQueue.main.async {
+            MessageSoundPlayer.shared.play()
+            NotificationCenter.default.post(
+                name: .forgeWebSourceUnread,
+                object: nil,
+                userInfo: [
+                    "sourceID": self.source.id,
+                    "sourceName": sourceLabel,
+                    "unreadCount": unread,
+                    "body": body
+                ]
+            )
+        }
     }
 
     private func unreadCount(from title: String) -> Int {

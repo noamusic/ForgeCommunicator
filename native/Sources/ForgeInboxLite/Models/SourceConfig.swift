@@ -3,8 +3,6 @@ import Foundation
 struct CommunicatorSourceConfig: Codable, Equatable {
     var serverURL: String
     var mobileAccessToken: String? = nil
-    var currentUserEmail: String? = nil
-    var currentUserDisplayName: String? = nil
 
     static let `default` = CommunicatorSourceConfig(serverURL: "https://comms.buildly.io")
 }

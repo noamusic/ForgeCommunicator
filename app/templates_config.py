@@ -5,6 +5,7 @@ All routers should import templates from here to ensure brand context is availab
 """
 
 import re
+from datetime import datetime, timedelta, timezone
 from markupsafe import Markup
 from fastapi.templating import Jinja2Templates
 import markdown
@@ -109,6 +110,10 @@ templates.env.globals["brand"] = get_brand()
 
 # Add settings for feature flags and configuration
 templates.env.globals["settings"] = settings
+
+# Expose datetime helpers for date separators and relative timestamps
+templates.env.globals["now"] = lambda: datetime.now(timezone.utc)
+templates.env.globals["timedelta"] = timedelta
 
 # Add markdown filters
 templates.env.filters["markdown"] = markdown_filter

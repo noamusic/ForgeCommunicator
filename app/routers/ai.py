@@ -16,6 +16,8 @@ from sqlalchemy import and_, select
 from sqlalchemy.orm import selectinload
 
 from app.deps import CurrentUser, DBSession
+from app.models.agent_handoff import AgentHandoff, HandoffStatus
+from app.models.agent_integration import AgentIntegration
 from app.models.ai_agent import (
     AIAgent,
     AIAgentScope,
@@ -695,15 +697,62 @@ async def list_workspace_agents(
     user: CurrentUser,
     db: DBSession,
 ):
-    """List AI agents for a workspace (admin view)."""
+    """List AI agents for a workspace (admin view), plus coding-agent
+    integrations and pending agent-to-agent hand-off requests, which any
+    workspace member (not just admins) can see and act on."""
     workspace, membership = await get_workspace_membership(workspace_id, user.id, db)
-    
-    if membership.role not in [MembershipRole.ADMIN, MembershipRole.OWNER]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-    
-    service = AIAgentService(db)
-    agents = await service.get_workspace_agents(workspace_id)
-    
+
+    is_admin = membership.role in [MembershipRole.ADMIN, MembershipRole.OWNER]
+
+    agents = []
+    if is_admin:
+        service = AIAgentService(db)
+        agents = await service.get_workspace_agents(workspace_id)
+
+    # Coding-agent integrations (Claude Code, Codex, etc.) — registration
+    # is admin-only, but every member can see who's registered.
+    result = await db.execute(
+        select(AgentIntegration)
+        .where(AgentIntegration.workspace_id == workspace_id)
+        .order_by(AgentIntegration.created_at.desc())
+    )
+    coding_agents = result.scalars().all()
+
+    # Pending hand-offs: gate agent-to-agent coordination on a human click.
+    result = await db.execute(
+        select(AgentHandoff)
+        .where(
+            AgentHandoff.workspace_id == workspace_id,
+            AgentHandoff.status == HandoffStatus.PENDING_APPROVAL.value,
+        )
+        .options(
+            selectinload(AgentHandoff.from_agent),
+            selectinload(AgentHandoff.to_agent),
+            selectinload(AgentHandoff.from_user),
+            selectinload(AgentHandoff.channel),
+        )
+        .order_by(AgentHandoff.created_at.desc())
+    )
+    pending_handoffs = result.scalars().all()
+
+    # Recent resolved hand-offs, for visibility into what's already happened.
+    result = await db.execute(
+        select(AgentHandoff)
+        .where(
+            AgentHandoff.workspace_id == workspace_id,
+            AgentHandoff.status != HandoffStatus.PENDING_APPROVAL.value,
+        )
+        .options(
+            selectinload(AgentHandoff.from_agent),
+            selectinload(AgentHandoff.to_agent),
+            selectinload(AgentHandoff.from_user),
+            selectinload(AgentHandoff.channel),
+        )
+        .order_by(AgentHandoff.created_at.desc())
+        .limit(20)
+    )
+    recent_handoffs = result.scalars().all()
+
     return templates.TemplateResponse(
         "ai/workspace_agents.html",
         {
@@ -711,8 +760,12 @@ async def list_workspace_agents(
             "user": user,
             "workspace": workspace,
             "membership": membership,
+            "is_admin": is_admin,
             "agents": agents,
             "providers": [p.value for p in AIProvider],
+            "coding_agents": coding_agents,
+            "pending_handoffs": pending_handoffs,
+            "recent_handoffs": recent_handoffs,
         },
     )
 

@@ -9,6 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import and_, or_, select
+from sqlalchemy import func as sqlfunc
 from sqlalchemy.orm import selectinload
 
 from app.deps import CurrentUser, DBSession
@@ -47,9 +48,9 @@ async def get_sidebar_bridge_metadata(channels: list[Channel], db) -> dict:
 
     # Backwards-compatible fallback for older synced channel names.
     for ch in channels:
-        if ch.name.startswith("SLACK:"):
+        if ch.name.upper().startswith("SLACK:"):
             slack_channel_ids.add(ch.id)
-            slack_channel_names.setdefault(ch.id, ch.name[6:])
+            slack_channel_names.setdefault(ch.id, ch.name[6:].strip())
 
     return {
         "slack_channel_ids": slack_channel_ids,
@@ -89,10 +90,15 @@ async def list_channels(
     workspace_id: int,
     user: CurrentUser,
     db: DBSession,
+    current_channel_id: int | None = None,
 ):
-    """List channels in workspace."""
+    """List channels in workspace.
+
+    When called as an HTMX request (sidebar refresh), returns just the sidebar
+    partial with accurate unread counts and the active channel highlighted.
+    """
     workspace, membership = await get_workspace_and_membership(workspace_id, user.id, db)
-    
+
     # Get public channels and private channels user is a member of
     result = await db.execute(
         select(Channel)
@@ -114,14 +120,54 @@ async def list_channels(
     )
     channels = result.scalars().all()
     sidebar_bridge_metadata = await get_sidebar_bridge_metadata(channels, db)
-    
+
     # Get products for grouping
     result = await db.execute(
         select(Product).where(Product.workspace_id == workspace_id, Product.is_active == True)
     )
     products = result.scalars().all()
-    
+
     if request.headers.get("HX-Request"):
+        # Compute real unread counts for the sidebar refresh
+        from sqlalchemy import func as sqlfunc
+
+        ch_ids = [ch.id for ch in channels]
+        unread_channels: dict[int, int] = {}
+
+        if ch_ids:
+            result = await db.execute(
+                select(ChannelMembership)
+                .where(ChannelMembership.user_id == user.id, ChannelMembership.channel_id.in_(ch_ids))
+            )
+            visited: dict[int, int | None] = {}
+            visited_set: set[int] = set()
+            for cm in result.scalars().all():
+                visited[cm.channel_id] = cm.last_read_message_id
+                visited_set.add(cm.channel_id)
+
+            for ch_id in ch_ids:
+                # Current channel: always 0 (user is actively viewing it)
+                if ch_id == current_channel_id:
+                    unread_channels[ch_id] = 0
+                    continue
+
+                # A membership with last_read_message_id=None means "never read
+                # anything here" — same as no membership: count all messages
+                # from others. This matches the mobile API semantics.
+                last_read_id = visited.get(ch_id)
+                unread_filters = [
+                    Message.channel_id == ch_id,
+                    Message.deleted_at == None,
+                    Message.parent_id == None,
+                    Message.user_id.is_distinct_from(user.id),
+                ]
+                if last_read_id is not None:
+                    unread_filters.append(Message.id > last_read_id)
+                count_result = await db.execute(
+                    select(sqlfunc.count(Message.id)).where(*unread_filters)
+                )
+                unread_channels[ch_id] = count_result.scalar() or 0
+
         return templates.TemplateResponse(
             "partials/channel_sidebar.html",
             {
@@ -130,12 +176,12 @@ async def list_channels(
                 "workspace": workspace,
                 "channels": channels,
                 "products": products,
-                "current_channel_id": None,
-                "unread_channels": {},
+                "current_channel_id": current_channel_id,
+                "unread_channels": unread_channels,
                 **sidebar_bridge_metadata,
             },
         )
-    
+
     return templates.TemplateResponse(
         "channels/list.html",
         {
@@ -344,28 +390,40 @@ async def channel_view(
     )
     messages = list(reversed(result.scalars().all()))
     
-    # Update last read message for this channel
-    if messages:
-        last_message_id = messages[-1].id
-        # Get or create channel membership for tracking reads
-        result = await db.execute(
-            select(ChannelMembership).where(
-                ChannelMembership.channel_id == channel_id,
-                ChannelMembership.user_id == user.id,
-            )
+    # Update last read message for this channel.
+    # Always upsert the membership read-pointer so even an empty-channel visit
+    # establishes a baseline and future messages don't pile up as unread.
+    # Use the channel-wide max message id (including thread replies) so clients
+    # that count replies toward unread (mobile) also see the channel as read.
+    from sqlalchemy import func as sqlfunc
+    last_id_result = await db.execute(
+        select(sqlfunc.max(Message.id)).where(
+            Message.channel_id == channel_id,
+            Message.deleted_at == None,
         )
-        channel_membership = result.scalar_one_or_none()
-        if channel_membership:
+    )
+    last_message_id = last_id_result.scalar_one_or_none()
+    result = await db.execute(
+        select(ChannelMembership).where(
+            ChannelMembership.channel_id == channel_id,
+            ChannelMembership.user_id == user.id,
+        )
+    )
+    channel_membership = result.scalar_one_or_none()
+    if channel_membership:
+        if last_message_id is not None:
             channel_membership.last_read_message_id = last_message_id
-        elif not channel.is_private:
-            # For public channels, create membership record for read tracking
-            channel_membership = ChannelMembership(
-                channel_id=channel_id,
-                user_id=user.id,
-                last_read_message_id=last_message_id,
-            )
-            db.add(channel_membership)
-        await db.commit()
+    elif not channel.is_private:
+        # For public channels, create membership record for read tracking.
+        # last_read_message_id=None is valid: it means "user has visited but
+        # there are no messages yet; don't count pre-existing messages as unread."
+        channel_membership = ChannelMembership(
+            channel_id=channel_id,
+            user_id=user.id,
+            last_read_message_id=last_message_id,
+        )
+        db.add(channel_membership)
+    await db.commit()
     
     # Get unread counts for all channels
     # First get user's channel memberships with last_read_message_id
@@ -373,47 +431,36 @@ async def channel_view(
         select(ChannelMembership)
         .where(ChannelMembership.user_id == user.id)
     )
-    user_channel_memberships = {cm.channel_id: cm.last_read_message_id for cm in result.scalars().all()}
-    
+    user_channel_memberships = {}
+    visited_channel_ids: set[int] = set()
+    for cm in result.scalars().all():
+        user_channel_memberships[cm.channel_id] = cm.last_read_message_id
+        visited_channel_ids.add(cm.channel_id)
+
     # Get unread message counts for each channel
     from sqlalchemy import func as sqlfunc
-    
-    # Build unread counts - count messages newer than last_read_message_id
+
+    # Build unread counts - count messages newer than last_read_message_id.
+    # last_read_message_id=None (or no membership row) means "never read
+    # anything here": count all messages from others. Matches mobile API.
     unread_channels = {}
     channel_ids = [ch.id for ch in channels]
-    
+
     if channel_ids:
-        # For channels with a last_read_message_id, count messages after that ID
-        # For channels without, count all messages
         for ch_id in channel_ids:
             last_read_id = user_channel_memberships.get(ch_id)
-            
+            unread_filters = [
+                Message.channel_id == ch_id,
+                Message.deleted_at == None,
+                Message.parent_id == None,
+                Message.user_id.is_distinct_from(user.id),
+            ]
             if last_read_id is not None:
-                # Count messages after last read (exclude thread replies)
-                count_result = await db.execute(
-                    select(sqlfunc.count(Message.id))
-                    .where(
-                        Message.channel_id == ch_id,
-                        Message.deleted_at == None,
-                        Message.parent_id == None,  # Only top-level messages
-                        Message.id > last_read_id,
-                        Message.user_id != user.id,  # Don't count own messages
-                    )
-                )
-            else:
-                # No membership record - count all messages (except own, exclude thread replies)
-                count_result = await db.execute(
-                    select(sqlfunc.count(Message.id))
-                    .where(
-                        Message.channel_id == ch_id,
-                        Message.deleted_at == None,
-                        Message.parent_id == None,  # Only top-level messages
-                        Message.user_id != user.id,  # Don't count own messages
-                    )
-                )
-            
-            count = count_result.scalar() or 0
-            unread_channels[ch_id] = count
+                unread_filters.append(Message.id > last_read_id)
+            count_result = await db.execute(
+                select(sqlfunc.count(Message.id)).where(*unread_filters)
+            )
+            unread_channels[ch_id] = count_result.scalar() or 0
     
     # Calculate unread thread reply counts for messages in this channel
     unread_thread_counts = {}
@@ -440,7 +487,7 @@ async def channel_view(
                     .where(
                         Message.parent_id == msg.id,
                         Message.deleted_at == None,
-                        Message.user_id != user.id,  # Don't count own replies as unread
+                        Message.user_id.is_distinct_from(user.id),  # Don't count own replies as unread
                     )
                 )
                 unread_thread_counts[msg.id] = count_result.scalar() or 0
@@ -452,7 +499,7 @@ async def channel_view(
                         Message.parent_id == msg.id,
                         Message.deleted_at == None,
                         Message.id > last_read_id,
-                        Message.user_id != user.id,  # Don't count own replies as unread
+                        Message.user_id.is_distinct_from(user.id),  # Don't count own replies as unread
                     )
                 )
                 unread_thread_counts[msg.id] = count_result.scalar() or 0
@@ -599,9 +646,18 @@ async def join_channel(
         )
     )
     if not result.scalar_one_or_none():
+        # Initialize the read cursor to the latest message so pre-join
+        # history doesn't show up as unread.
+        latest_result = await db.execute(
+            select(sqlfunc.max(Message.id)).where(
+                Message.channel_id == channel_id,
+                Message.deleted_at == None,
+            )
+        )
         channel_membership = ChannelMembership(
             channel_id=channel_id,
             user_id=user.id,
+            last_read_message_id=latest_result.scalar_one_or_none(),
         )
         db.add(channel_membership)
         await db.commit()

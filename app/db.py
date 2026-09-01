@@ -118,6 +118,8 @@ async def init_db() -> None:
             async with engine.begin() as conn:
                 # Import all models to ensure they're registered
                 from app.models import (  # noqa: F401
+                    agent_handoff,
+                    agent_integration,
                     api_token,
                     artifact,
                     channel,
@@ -202,6 +204,57 @@ async def init_db() -> None:
                     )""",
                     "CREATE INDEX IF NOT EXISTS ix_api_tokens_token ON api_tokens(token)",
                     "CREATE INDEX IF NOT EXISTS ix_api_tokens_user_id ON api_tokens(user_id)",
+                    # Agent integrations for third-party AI coding agents (added 2026-08-07)
+                    """CREATE TABLE IF NOT EXISTS agent_integrations (
+                        id SERIAL PRIMARY KEY,
+                        workspace_id INTEGER NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+                        created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        name VARCHAR(100) NOT NULL,
+                        provider VARCHAR(50) NOT NULL DEFAULT 'custom',
+                        avatar_emoji VARCHAR(8),
+                        token VARCHAR(64) UNIQUE,
+                        webhook_secret VARCHAR(64),
+                        allowed_channel_ids INTEGER[],
+                        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                        revoked_at TIMESTAMP WITH TIME ZONE,
+                        last_used_at TIMESTAMP WITH TIME ZONE,
+                        buildly_product_uuid VARCHAR(36),
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+                    )""",
+                    "CREATE INDEX IF NOT EXISTS ix_agent_integrations_workspace_id ON agent_integrations(workspace_id)",
+                    "CREATE INDEX IF NOT EXISTS ix_agent_integrations_token ON agent_integrations(token)",
+                    "ALTER TABLE messages ADD COLUMN IF NOT EXISTS agent_integration_id INTEGER REFERENCES agent_integrations(id) ON DELETE SET NULL",
+                    "ALTER TABLE messages ADD COLUMN IF NOT EXISTS agent_message_kind VARCHAR(20)",
+                    "ALTER TABLE artifacts ADD COLUMN IF NOT EXISTS assignee_agent_id INTEGER REFERENCES agent_integrations(id) ON DELETE SET NULL",
+                    # Agent-to-agent hand-offs, human-approval gated (added 2026-08-26)
+                    "ALTER TABLE agent_integrations ADD COLUMN IF NOT EXISTS webhook_url TEXT",
+                    """CREATE TABLE IF NOT EXISTS agent_handoffs (
+                        id SERIAL PRIMARY KEY,
+                        workspace_id INTEGER NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+                        channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+                        from_agent_id INTEGER REFERENCES agent_integrations(id) ON DELETE SET NULL,
+                        from_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                        to_agent_id INTEGER NOT NULL REFERENCES agent_integrations(id) ON DELETE CASCADE,
+                        prompt TEXT NOT NULL,
+                        status VARCHAR(20) NOT NULL DEFAULT 'pending_approval',
+                        root_message_id INTEGER REFERENCES messages(id) ON DELETE SET NULL,
+                        response_message_id INTEGER REFERENCES messages(id) ON DELETE SET NULL,
+                        approved_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                        approved_at TIMESTAMP WITH TIME ZONE,
+                        rejected_reason VARCHAR(500),
+                        parent_handoff_id INTEGER REFERENCES agent_handoffs(id) ON DELETE SET NULL,
+                        turn_number INTEGER NOT NULL DEFAULT 1,
+                        max_turns INTEGER NOT NULL DEFAULT 4,
+                        delivered_at TIMESTAMP WITH TIME ZONE,
+                        responded_at TIMESTAMP WITH TIME ZONE,
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+                    )""",
+                    "CREATE INDEX IF NOT EXISTS ix_agent_handoffs_workspace_id ON agent_handoffs(workspace_id)",
+                    "CREATE INDEX IF NOT EXISTS ix_agent_handoffs_channel_id ON agent_handoffs(channel_id)",
+                    "CREATE INDEX IF NOT EXISTS ix_agent_handoffs_to_agent_id ON agent_handoffs(to_agent_id)",
+                    "CREATE INDEX IF NOT EXISTS ix_agent_handoffs_status ON agent_handoffs(status)",
                 ]
                 
                 for migration in migrations:

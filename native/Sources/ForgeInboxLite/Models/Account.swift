@@ -4,6 +4,8 @@ enum SourceType: String, Codable, CaseIterable, Identifiable {
     case communicator
     case whatsapp
     case signal
+    case telegram
+    case irc
 
     var id: String { rawValue }
 
@@ -15,6 +17,10 @@ enum SourceType: String, Codable, CaseIterable, Identifiable {
             return "WhatsApp"
         case .signal:
             return "Signal"
+        case .telegram:
+            return "Telegram"
+        case .irc:
+            return "IRC"
         }
     }
 }

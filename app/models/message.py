@@ -16,6 +16,7 @@ class ExternalSource(str, Enum):
     """External platforms that messages can originate from."""
     SLACK = "slack"
     DISCORD = "discord"
+    AGENT = "agent"  # Third-party AI coding agent (Claude Code, Codex, etc.)
 
 
 class Message(Base, TimestampMixin):
@@ -45,10 +46,19 @@ class Message(Base, TimestampMixin):
     external_thread_ts: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Slack thread timestamp
     external_author_name: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Original author display name
     external_author_avatar: Mapped[str | None] = mapped_column(Text, nullable=True)  # Original author avatar URL
-    
+
+    # Set when external_source == "agent": which AgentIntegration posted this message.
+    agent_integration_id: Mapped[int | None] = mapped_column(
+        ForeignKey("agent_integrations.id", ondelete="SET NULL"), nullable=True
+    )
+    # "chat" for a normal message, "progress" for a status/progress update —
+    # lets clients render agent progress updates distinctly from chat.
+    agent_message_kind: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
     # Relationships
     channel = relationship("Channel", back_populates="messages")
     user = relationship("User", back_populates="messages")
+    agent_integration = relationship("AgentIntegration")
     parent = relationship("Message", remote_side="Message.id", backref="replies")
     attachments = relationship("Attachment", back_populates="message", lazy="selectin")
     reactions = relationship("MessageReaction", back_populates="message", lazy="selectin", cascade="all, delete-orphan")
@@ -63,8 +73,12 @@ class Message(Base, TimestampMixin):
     
     @property
     def is_external(self) -> bool:
-        """Check if this message is from an external source (Slack/Discord)."""
+        """Check if this message is from an external source (Slack/Discord/Agent)."""
         return self.external_source is not None
+
+    @property
+    def is_agent(self) -> bool:
+        return self.external_source == ExternalSource.AGENT.value
     
     @property
     def content(self) -> str:
@@ -78,6 +92,8 @@ class Message(Base, TimestampMixin):
             return "Slack"
         elif self.external_source == "discord":
             return "Discord"
+        elif self.external_source == "agent":
+            return self.external_author_name or "AI Agent"
         return None
     
     def soft_delete(self) -> None:

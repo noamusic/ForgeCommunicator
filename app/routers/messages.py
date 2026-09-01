@@ -92,9 +92,14 @@ async def get_messages(
     
     if after:
         query = query.where(Message.id > after)
-    
-    query = query.order_by(Message.created_at.desc()).limit(limit)
-    
+
+    # Order by id (monotonic, immune to backdated external/bridged timestamps)
+    # both for the LIMIT window and the final display order, so polling and
+    # catch-up fetches can't return messages in a different relative order
+    # than they were sent — that mismatch was causing messages to render
+    # above/below where they belonged once external messages were involved.
+    query = query.order_by(Message.id.desc()).limit(limit)
+
     result = await db.execute(query)
     messages = list(reversed(result.scalars().all()))
     
@@ -828,7 +833,7 @@ async def get_single_message(
                         Message.parent_id == message_id,
                         Message.deleted_at == None,
                         Message.id > thread_read.last_read_reply_id,
-                        Message.user_id != user.id,
+                        Message.user_id.is_distinct_from(user.id),
                     )
                 )
                 unread_count = count_result.scalar() or 0
@@ -840,7 +845,7 @@ async def get_single_message(
                     .where(
                         Message.parent_id == message_id,
                         Message.deleted_at == None,
-                        Message.user_id != user.id,
+                        Message.user_id.is_distinct_from(user.id),
                     )
                 )
                 unread_count = count_result.scalar() or 0

@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.deps import CurrentUser, DBSession, WorkspaceCreator
@@ -57,16 +57,30 @@ async def list_workspaces(
     # Calculate unread counts per workspace
     workspace_unread_counts = {}
     for ws in workspaces:
-        # Get all channels in this workspace the user can access
+        # Get channels in this workspace the user can actually see: public
+        # channels, plus private channels/DMs they're a member of. Without
+        # this scoping, private channels/DMs belonging to other users were
+        # counted as permanently unread — the user can never "read" a
+        # channel they were never added to, so the badge could never clear.
         result = await db.execute(
             select(Channel.id)
             .where(
                 Channel.workspace_id == ws.id,
                 Channel.is_archived == False,
+                or_(
+                    Channel.is_private == False,
+                    and_(
+                        Channel.is_private == True,
+                        Channel.id.in_(
+                            select(ChannelMembership.channel_id)
+                            .where(ChannelMembership.user_id == user.id)
+                        )
+                    )
+                )
             )
         )
         channel_ids = [row[0] for row in result.fetchall()]
-        
+
         if not channel_ids:
             workspace_unread_counts[ws.id] = 0
             continue
@@ -79,36 +93,44 @@ async def list_workspaces(
                 ChannelMembership.channel_id.in_(channel_ids),
             )
         )
-        user_memberships = {cm.channel_id: cm.last_read_message_id for cm in result.scalars().all()}
-        
-        # Count unread messages across all channels in this workspace
+        user_memberships: dict[int, int | None] = {}
+        visited_ids: set[int] = set()
+        for cm in result.scalars().all():
+            user_memberships[cm.channel_id] = cm.last_read_message_id
+            visited_ids.add(cm.channel_id)
+
+        # Count unread messages across all channels in this workspace.
+        # Channels with no read cursor (never visited, or membership with
+        # last_read_message_id=None) count all messages from others as unread.
         total_unread = 0
         for ch_id in channel_ids:
-            last_read_id = user_memberships.get(ch_id)
-            if last_read_id is not None:
+            if ch_id not in visited_ids:
                 count_result = await db.execute(
                     select(sqlfunc.count(Message.id))
                     .where(
                         Message.channel_id == ch_id,
                         Message.deleted_at == None,
-                        Message.parent_id == None,  # Only top-level messages, not thread replies
-                        Message.id > last_read_id,
-                        Message.user_id != user.id,
+                        Message.parent_id == None,
+                        Message.user_id.is_distinct_from(user.id),
                     )
                 )
+                total_unread += count_result.scalar() or 0
             else:
-                # No membership - count all messages except own (and thread replies)
+                last_read_id = user_memberships[ch_id]
+                # last_read_id None = never read anything → count all from others
+                unread_filters = [
+                    Message.channel_id == ch_id,
+                    Message.deleted_at == None,
+                    Message.parent_id == None,
+                    Message.user_id.is_distinct_from(user.id),
+                ]
+                if last_read_id is not None:
+                    unread_filters.append(Message.id > last_read_id)
                 count_result = await db.execute(
-                    select(sqlfunc.count(Message.id))
-                    .where(
-                        Message.channel_id == ch_id,
-                        Message.deleted_at == None,
-                        Message.parent_id == None,  # Only top-level messages, not thread replies
-                        Message.user_id != user.id,
-                    )
+                    select(sqlfunc.count(Message.id)).where(*unread_filters)
                 )
-            total_unread += count_result.scalar() or 0
-        
+                total_unread += count_result.scalar() or 0
+
         workspace_unread_counts[ws.id] = total_unread
     
     # Check if user is admin (either flagged or in admin emails)
@@ -162,12 +184,26 @@ async def get_total_unread_count(
     if not workspace_ids:
         return JSONResponse({"unread_count": 0})
     
-    # Get all channels across all workspaces
+    # Get channels across all workspaces the user can actually see (public,
+    # or private/DM channels they're a member of) — same scoping as the
+    # per-workspace badge, for the same reason: an inaccessible private
+    # channel can never be marked read, so including it here made the
+    # global badge permanently stuck too.
     result = await db.execute(
         select(Channel.id)
         .where(
             Channel.workspace_id.in_(workspace_ids),
             Channel.is_archived == False,
+            or_(
+                Channel.is_private == False,
+                and_(
+                    Channel.is_private == True,
+                    Channel.id.in_(
+                        select(ChannelMembership.channel_id)
+                        .where(ChannelMembership.user_id == user.id)
+                    )
+                )
+            )
         )
     )
     channel_ids = [row[0] for row in result.fetchall()]
@@ -183,35 +219,42 @@ async def get_total_unread_count(
             ChannelMembership.channel_id.in_(channel_ids),
         )
     )
-    user_memberships = {cm.channel_id: cm.last_read_message_id for cm in result.scalars().all()}
-    
+    user_memberships: dict[int, int | None] = {}
+    visited_ids: set[int] = set()
+    for cm in result.scalars().all():
+        user_memberships[cm.channel_id] = cm.last_read_message_id
+        visited_ids.add(cm.channel_id)
+
     # Count unread across all channels
     total_unread = 0
     for ch_id in channel_ids:
-        last_read_id = user_memberships.get(ch_id)
-        if last_read_id is not None:
+        if ch_id not in visited_ids:
             count_result = await db.execute(
                 select(sqlfunc.count(Message.id))
                 .where(
                     Message.channel_id == ch_id,
                     Message.deleted_at == None,
                     Message.parent_id == None,
-                    Message.id > last_read_id,
-                    Message.user_id != user.id,
+                    Message.user_id.is_distinct_from(user.id),
                 )
             )
+            total_unread += count_result.scalar() or 0
         else:
+            last_read_id = user_memberships[ch_id]
+            # last_read_id None = never read anything → count all from others
+            unread_filters = [
+                Message.channel_id == ch_id,
+                Message.deleted_at == None,
+                Message.parent_id == None,
+                Message.user_id.is_distinct_from(user.id),
+            ]
+            if last_read_id is not None:
+                unread_filters.append(Message.id > last_read_id)
             count_result = await db.execute(
-                select(sqlfunc.count(Message.id))
-                .where(
-                    Message.channel_id == ch_id,
-                    Message.deleted_at == None,
-                    Message.parent_id == None,
-                    Message.user_id != user.id,
-                )
+                select(sqlfunc.count(Message.id)).where(*unread_filters)
             )
-        total_unread += count_result.scalar() or 0
-    
+            total_unread += count_result.scalar() or 0
+
     return JSONResponse({"unread_count": total_unread})
 
 
@@ -233,11 +276,23 @@ async def mark_workspace_all_read(
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="Not a member of this workspace")
     
-    # Get all channels in workspace
+    # Only mark channels the user can actually see as read — a private
+    # channel/DM they're not a member of should neither count toward their
+    # unread badge nor get a membership row created here as a side effect.
     result = await db.execute(
         select(Channel.id).where(
             Channel.workspace_id == workspace_id,
             Channel.is_archived == False,
+            or_(
+                Channel.is_private == False,
+                and_(
+                    Channel.is_private == True,
+                    Channel.id.in_(
+                        select(ChannelMembership.channel_id)
+                        .where(ChannelMembership.user_id == user.id)
+                    )
+                )
+            )
         )
     )
     channel_ids = [row[0] for row in result.fetchall()]

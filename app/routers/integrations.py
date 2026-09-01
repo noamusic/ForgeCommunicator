@@ -820,79 +820,123 @@ async def slack_webhook(
     # Handle events
     if data.get("type") == "event_callback":
         event_data = slack_service.parse_event(data)
-        
+
         if event_data:
-            # Find user with this Slack integration
+            slack_channel_id = event_data.get("channel_id")
+            slack_team_id = data.get("team_id")
+            slack_user_id = event_data.get("user_id")
+            message_text = event_data.get("text", "")
+            message_ts = event_data.get("ts")
+
+            # Find all active integrations for this Slack workspace.
             result = await db.execute(
                 select(ExternalIntegration).where(
                     ExternalIntegration.integration_type == IntegrationType.SLACK,
-                    ExternalIntegration.external_team_id == data.get("team_id"),
+                    ExternalIntegration.external_team_id == slack_team_id,
                     ExternalIntegration.is_active == True,
                 )
             )
             integrations = result.scalars().all()
-            
+
+            # Find the Forge channel bridged to this Slack channel (shared across users).
+            bridge_result = await db.execute(
+                select(BridgedChannel).where(
+                    BridgedChannel.external_channel_id == slack_channel_id,
+                    BridgedChannel.is_active == True,
+                    BridgedChannel.platform == BridgePlatform.slack,
+                )
+            )
+            bridge = bridge_result.scalar_one_or_none()
+
+            # Store the message in the Forge Message table so it appears in
+            # conversation lists and drives unread counts. Only store once per
+            # external_message_id to avoid duplicates on webhook retries.
+            stored_message = None
+            if bridge and message_ts:
+                existing = await db.execute(
+                    select(Message).where(
+                        Message.channel_id == bridge.channel_id,
+                        Message.external_message_id == message_ts,
+                        Message.external_source == "slack",
+                    )
+                )
+                if existing.scalar_one_or_none() is None:
+                    sender_name = "Unknown"
+                    if integrations:
+                        sender_info = await slack_service.get_user_info(
+                            integrations[0].access_token, slack_user_id
+                        )
+                        if sender_info:
+                            sender_name = sender_info.get("real_name") or sender_info.get("name", "Unknown")
+
+                    stored_message = Message(
+                        channel_id=bridge.channel_id,
+                        user_id=None,  # no Forge user — external sender
+                        body=message_text,
+                        external_source="slack",
+                        external_author_name=sender_name,
+                        external_message_id=message_ts,
+                        created_at=datetime.fromtimestamp(float(message_ts), tz=timezone.utc),
+                    )
+                    db.add(stored_message)
+                    await db.flush()  # get stored_message.id before using it below
+
             for integration in integrations:
-                # Check if this user should receive this notification
                 prefs = integration.notification_preferences or {}
                 source = event_data.get("source")
-                
+
+                # Determine whether this user should be notified.
+                # For bridged channels, always notify members — the bridge itself
+                # is the signal that they want to see these messages.
                 should_notify = False
-                if source == "slack_dm" and prefs.get("dm"):
+                if source == "slack_dm" and prefs.get("dm", True):
                     should_notify = True
                 elif source == "slack_channel":
-                    # Check for mentions or watched channels
-                    if prefs.get("mentions"):
-                        # Check if user was mentioned
-                        text = event_data.get("text", "")
-                        if f"<@{integration.external_user_id}>" in text:
+                    if bridge:
+                        # Always notify for channels the user has bridged.
+                        should_notify = True
+                    elif prefs.get("mentions"):
+                        if f"<@{integration.external_user_id}>" in message_text:
                             source = "slack_mention"
                             should_notify = True
-                    
-                    # Check watched channels
+                    # Also check explicit watched list (Slack channel IDs, not Forge IDs).
                     watched = prefs.get("channels", [])
-                    if event_data.get("channel_id") in watched:
+                    if slack_channel_id in watched:
                         should_notify = True
-                
+
                 if should_notify:
-                    # Get sender info
-                    sender_info = await slack_service.get_user_info(
-                        integration.access_token,
-                        event_data.get("user_id"),
-                    )
-                    sender_name = sender_info.get("real_name", "Unknown") if sender_info else "Unknown"
-                    
-                    # Get channel info
                     channel_info = await slack_service.get_channel_info(
-                        integration.access_token,
-                        event_data.get("channel_id"),
+                        integration.access_token, slack_channel_id
                     )
                     channel_name = channel_info.get("name") if channel_info else None
-                    
-                    # Build message URL
-                    external_url = slack_service.build_message_url(
-                        event_data.get("team_id"),
-                        event_data.get("channel_id"),
-                        event_data.get("ts"),
+
+                    sender_name = "Unknown"
+                    sender_info = await slack_service.get_user_info(
+                        integration.access_token, slack_user_id
                     )
-                    
-                    # Create notification log
+                    if sender_info:
+                        sender_name = sender_info.get("real_name") or sender_info.get("name", "Unknown")
+
+                    external_url = slack_service.build_message_url(
+                        slack_team_id, slack_channel_id, message_ts
+                    )
+
                     notification = NotificationLog.create_from_slack(
                         user_id=integration.user_id,
                         integration_id=integration.id,
                         source=NotificationSource(source),
                         sender_name=sender_name,
-                        message_body=event_data.get("text", ""),
+                        message_body=message_text,
                         channel_name=channel_name,
                         external_url=external_url,
-                        sender_external_id=event_data.get("user_id"),
-                        channel_external_id=event_data.get("channel_id"),
-                        external_message_id=event_data.get("ts"),
+                        sender_external_id=slack_user_id,
+                        channel_external_id=slack_channel_id,
+                        external_message_id=message_ts,
                     )
                     db.add(notification)
-            
+
             await db.commit()
-    
+
     return JSONResponse({"status": "ok"})
 
 

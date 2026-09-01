@@ -56,6 +56,13 @@ if [[ ! -d "$APP_PATH" ]]; then
   exit 1
 fi
 
+# Strip local symbol/debug metadata from the app binary in local release builds
+# to reduce accidental embedding of developer-specific path strings.
+APP_BIN="$APP_PATH/Contents/MacOS/$APP_NAME"
+if [[ -f "$APP_BIN" ]]; then
+  strip -x "$APP_BIN" || true
+fi
+
 mkdir -p "$STAGING_DIR"
 cp -R "$APP_PATH" "$STAGING_DIR/"
 ln -s /Applications "$STAGING_DIR/Applications"

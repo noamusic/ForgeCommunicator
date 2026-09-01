@@ -34,10 +34,17 @@ struct ContentView: View {
             )) {
                 ForEach(store.accounts) { account in
                     HStack(spacing: 10) {
-                        Image(systemName: symbolName(for: account.type))
-                            .foregroundStyle(symbolColor(for: account.type))
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(iconBackground(for: account.type))
+                                .frame(width: 32, height: 32)
+                            Image(systemName: symbolName(for: account.type))
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(symbolColor(for: account.type))
+                        }
                         VStack(alignment: .leading, spacing: 2) {
                             Text(account.displayName)
+                                .font(.system(size: 13, weight: .medium, design: .default))
                             Text(account.type.displayLabel)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -89,14 +96,22 @@ struct ContentView: View {
                         .id("\(selected.id.uuidString)-\(whatsappSessionResetNonce)")
                     case .signal:
                         SignalWorkspaceView(account: selected, statusMessage: $signalStatusMessage)
+                    case .telegram:
+                        TelegramWorkspaceView(account: selected, manager: webSessionManager)
+                    case .irc:
+                        IRCProvider(sessionManager: webSessionManager).makeMainView(for: selected)
                     }
                 } else {
-                    VStack(spacing: 8) {
-                        Image(systemName: "tray")
-                            .font(.system(size: 28))
-                            .foregroundStyle(.secondary)
-                        Text("No Account Selected")
-                            .foregroundStyle(.secondary)
+                    VStack(spacing: 12) {
+                        Image(systemName: "bubble.left.and.bubble.right")
+                            .font(.system(size: 40))
+                            .foregroundStyle(ForgeTheme.primary.opacity(0.5))
+                        Text("Select a source")
+                            .font(.title3)
+                            .foregroundStyle(ForgeTheme.silver)
+                        Text("Choose a messaging source from the sidebar")
+                            .font(.subheadline)
+                            .foregroundStyle(ForgeTheme.silver.opacity(0.5))
                     }
                 }
             }
@@ -133,6 +148,25 @@ struct ContentView: View {
             return "bubble.left"
         case .signal:
             return "dot.radiowaves.left.and.right"
+        case .telegram:
+            return "paperplane"
+        case .irc:
+            return "number"
+        }
+    }
+
+    private func iconBackground(for type: AccountType) -> Color {
+        switch type {
+        case .communicator:
+            return ForgeTheme.primary.opacity(0.15)
+        case .whatsapp:
+            return Color.green.opacity(0.15)
+        case .signal:
+            return ForgeTheme.amber.opacity(0.15)
+        case .telegram:
+            return Color.cyan.opacity(0.15)
+        case .irc:
+            return ForgeTheme.violet.opacity(0.15)
         }
     }
 
@@ -144,6 +178,10 @@ struct ContentView: View {
             return .green
         case .signal:
             return ForgeTheme.amber
+        case .telegram:
+            return .cyan
+        case .irc:
+            return ForgeTheme.violet
         }
     }
 
@@ -265,5 +303,38 @@ private struct SignalWorkspaceView: View {
             Spacer()
         }
         .padding(20)
+    }
+}
+
+private struct TelegramWorkspaceView: View {
+    let account: Account
+    let manager: WebSessionManager
+
+    private let telegramDesktopURL = URL(string: "https://web.telegram.org/k/")!
+
+    var body: some View {
+        let webView = manager.webView(for: account)
+
+        VStack(spacing: 0) {
+            HStack {
+                Text(account.displayName)
+                    .font(.headline)
+                Spacer()
+                Text("Telegram Web")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+
+            Divider()
+
+            AccountWebContainerView(webView: webView)
+                .onAppear {
+                    if webView.url == nil {
+                        webView.load(URLRequest(url: telegramDesktopURL))
+                    }
+                }
+        }
     }
 }

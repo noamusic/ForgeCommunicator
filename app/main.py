@@ -291,6 +291,10 @@ app.include_router(integrations.router)
 from app.routers import ai
 app.include_router(ai.router)
 
+# Third-party AI coding agent integrations (Claude Code, Codex, etc.)
+from app.routers import agents
+app.include_router(agents.router)
+
 
 # Error handlers - Handle HTTPException from FastAPI
 from starlette.exceptions import HTTPException as StarletteHTTPException

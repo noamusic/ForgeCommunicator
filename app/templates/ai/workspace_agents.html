@@ -17,14 +17,166 @@
                 <h1 class="text-2xl font-bold text-white">Workspace AI Agents</h1>
                 <p class="text-gray-400 mt-1">AI assistants available to all members of {{ workspace.name }}</p>
             </div>
+            {% if is_admin %}
             <a href="/ai/agents/new?workspace_id={{ workspace.id }}" class="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all flex items-center space-x-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
                 <span>Add Agent</span>
             </a>
+            {% endif %}
         </div>
-        
+
+        {% set new_agent_id = request.query_params.get('new_agent_id') %}
+        {% if new_agent_id %}
+        <div class="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center justify-between">
+            <span class="text-green-400 text-sm">Coding agent registered. View its one-time credentials before they're gone.</span>
+            <a href="/workspaces/{{ workspace.id }}/agents/{{ new_agent_id }}/reveal" class="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 text-sm font-medium">
+                Reveal credentials
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- ===================================================================
+             Pending Hand-off Requests — agent-to-agent coordination, gated on
+             a human click before any target agent's tokens are spent.
+        ==================================================================== -->
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold text-white mb-1">Pending Hand-off Requests</h2>
+            <p class="text-sm text-gray-400 mb-4">When one agent asks another for help — design guidance, a second opinion, splitting front-end/back-end work — nothing reaches the target agent until you approve it here.</p>
+
+            {% if pending_handoffs %}
+            <div class="grid gap-3">
+                {% for h in pending_handoffs %}
+                <div class="glass-dark border border-amber-500/30 rounded-xl p-4">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm text-white">
+                                <strong>{{ h.from_agent.name if h.from_agent else (h.from_user.display_name if h.from_user else 'Someone') }}</strong>
+                                <span class="text-gray-400">is asking</span>
+                                <strong>{{ h.to_agent.name if h.to_agent else 'an agent' }}</strong>
+                                <span class="text-gray-500 text-xs">· turn {{ h.turn_number }}/{{ h.max_turns }} · #{{ h.channel.name if h.channel else h.channel_id }}</span>
+                            </p>
+                            <p class="text-gray-300 text-sm mt-2 line-clamp-3">{{ h.prompt }}</p>
+                        </div>
+                        <div class="flex flex-col gap-2 flex-shrink-0">
+                            <form method="post" action="/workspaces/{{ workspace.id }}/handoffs/{{ h.id }}/approve-form">
+                                <button type="submit" class="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 text-sm font-medium w-full">
+                                    Approve
+                                </button>
+                            </form>
+                            <form method="post" action="/workspaces/{{ workspace.id }}/handoffs/{{ h.id }}/reject-form">
+                                <button type="submit" class="px-3 py-1.5 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 text-sm font-medium w-full">
+                                    Reject
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="glass-dark border border-white/10 rounded-xl p-6 text-center text-sm text-gray-500">
+                No pending hand-off requests.
+            </div>
+            {% endif %}
+
+            {% if recent_handoffs %}
+            <details class="mt-4">
+                <summary class="text-sm text-gray-400 hover:text-white cursor-pointer">Recent activity ({{ recent_handoffs|length }})</summary>
+                <div class="mt-3 grid gap-2">
+                    {% for h in recent_handoffs %}
+                    <div class="flex items-center justify-between text-xs text-gray-500 px-3 py-2 bg-white/5 rounded-lg">
+                        <span>
+                            {{ h.from_agent.name if h.from_agent else (h.from_user.display_name if h.from_user else 'Someone') }}
+                            → {{ h.to_agent.name if h.to_agent else 'agent' }}
+                        </span>
+                        <span class="px-2 py-0.5 rounded-full
+                            {% if h.status == 'responded' %}bg-green-500/10 text-green-400
+                            {% elif h.status == 'rejected' %}bg-red-500/10 text-red-400
+                            {% elif h.status == 'expired' %}bg-gray-500/10 text-gray-400
+                            {% else %}bg-blue-500/10 text-blue-400{% endif %}">
+                            {{ h.status }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+            {% endif %}
+        </div>
+
+        <!-- ===================================================================
+             Coding Agents — Claude Code / Codex / custom bots that post into
+             channels via the /agents/v1 API, distinct from the chat-assistant
+             AIAgents below.
+        ==================================================================== -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-1">
+                <h2 class="text-lg font-semibold text-white">Coding Agents</h2>
+                {% if is_admin %}
+                <button type="button" onclick="document.getElementById('new-coding-agent-form').classList.toggle('hidden')" class="text-sm text-purple-400 hover:text-purple-300">
+                    + Register agent
+                </button>
+                {% endif %}
+            </div>
+            <p class="text-sm text-gray-400 mb-4">Claude Code, Codex, or other coding-agent sessions that talk to this workspace via API — posting progress, picking up assigned issues, or coordinating with each other through hand-offs above.</p>
+
+            {% if is_admin %}
+            <form id="new-coding-agent-form" method="post" action="/workspaces/{{ workspace.id }}/agents/new" class="hidden glass-dark border border-white/10 rounded-xl p-4 mb-4 grid gap-3 sm:grid-cols-3">
+                <input type="text" name="name" required placeholder="Name (e.g. Claude Code - backend)" class="sm:col-span-2 px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm placeholder-gray-500">
+                <select name="provider" class="px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm">
+                    <option value="claude_code">Claude Code</option>
+                    <option value="codex">Codex</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <select name="auth_mode" class="px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm">
+                    <option value="token">Bearer token (agent polls)</option>
+                    <option value="webhook">Webhook secret (Forge pushes)</option>
+                    <option value="both">Both</option>
+                </select>
+                <button type="submit" class="sm:col-span-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 text-sm font-medium">
+                    Register
+                </button>
+            </form>
+            {% endif %}
+
+            {% if coding_agents %}
+            <div class="grid gap-3">
+                {% for a in coding_agents %}
+                <div class="glass-dark border border-white/10 rounded-xl p-4 flex items-center justify-between">
+                    <div class="min-w-0">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-white font-medium">{{ a.name }}</span>
+                            <span class="px-2 py-0.5 text-xs rounded-full bg-blue-500/10 text-blue-400">{{ a.provider }}</span>
+                            {% if a.is_active %}
+                            <span class="w-2 h-2 bg-green-500 rounded-full" title="Active"></span>
+                            {% else %}
+                            <span class="w-2 h-2 bg-gray-500 rounded-full" title="Revoked"></span>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">
+                            {% if a.last_used_at %}Last active {{ a.last_used_at.strftime('%b %-d, %Y %H:%M') }}{% else %}Never used{% endif %}
+                            {% if a.allowed_channel_ids %} · scoped to {{ a.allowed_channel_ids|length }} channel(s){% else %} · all channels{% endif %}
+                        </p>
+                    </div>
+                    {% if is_admin and a.is_active %}
+                    <form method="post" action="/workspaces/{{ workspace.id }}/agents/{{ a.id }}/revoke-form" onsubmit="return confirm('Revoke {{ a.name }}? It will immediately lose access.');">
+                        <button type="submit" class="px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 rounded-lg">Revoke</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="glass-dark border border-white/10 rounded-xl p-6 text-center text-sm text-gray-500">
+                No coding agents registered yet.
+            </div>
+            {% endif %}
+        </div>
+
+        <h2 class="text-lg font-semibold text-white mb-1">Chat Assistants</h2>
+        <p class="text-sm text-gray-400 mb-4">Conversational AI assistants powered by your own API keys.</p>
+
         {% if agents %}
         <div class="grid gap-4">
             {% for agent in agents %}
@@ -104,17 +256,19 @@
                     <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5z"/>
                 </svg>
             </div>
-            <h3 class="text-xl font-semibold text-white mb-2">No Workspace AI Agents</h3>
+            <h3 class="text-xl font-semibold text-white mb-2">No Chat Assistants</h3>
             <p class="text-gray-400 mb-6 max-w-md mx-auto">
-                Add an AI agent that will be available to all workspace members. 
-                The agent can help with tasks, answer questions, and scan workspace content.
+                {% if is_admin %}Add an AI agent that will be available to all workspace members.
+                The agent can help with tasks, answer questions, and scan workspace content.{% else %}No chat assistants have been configured for this workspace yet.{% endif %}
             </p>
+            {% if is_admin %}
             <a href="/ai/agents/new?workspace_id={{ workspace.id }}" class="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
                 <span>Add Workspace Agent</span>
             </a>
+            {% endif %}
         </div>
         {% endif %}
         

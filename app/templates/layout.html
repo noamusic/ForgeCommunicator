@@ -4,34 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}{{ brand.full_name }}{% endblock %}</title>
-    
+
     <!-- PWA Meta Tags -->
     <meta name="description" content="Team communication and collaboration platform">
     <meta name="theme-color" content="#4DB6FF">
     <meta name="mobile-web-app-capable" content="yes">
-    
+
     <!-- iOS PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Forge">
     <meta name="format-detection" content="telephone=no">
-    
+
     <!-- Web App Manifest -->
     <link rel="manifest" href="/manifest.json">
-    
+
     <!-- Standard Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ brand.favicon_url }}">
-    
+
     <!-- Apple Touch Icons (iOS) -->
     <link rel="apple-touch-icon" href="/static/icons/icon-180x180.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/icon-180x180.png">
     <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/icon-152x152.png">
     <link rel="apple-touch-icon" sizes="144x144" href="/static/icons/icon-144x144.png">
     <link rel="apple-touch-icon" sizes="120x120" href="/static/icons/icon-128x128.png">
-    
+
     <!-- iOS Splash Screens -->
     <link rel="apple-touch-startup-image" href="/static/icons/icon-512x512.png">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -45,18 +45,22 @@
                             accent: '{{ brand.accent_color }}',
                         },
                         forge: {
-                            void: '#0B0F17',
-                            navy: '#111827',
-                            panel: '#1B2638',
+                            void: '#080F17',
+                            navy: '#121826',
+                            panel: '#1A2233',
                             elevated: '#2D3A50',
                             blue: '#4DB6FF',
                             amber: '#FFC857',
+                            violet: '#7C5CFF',
+                            green: '#31C48D',
+                            coral: '#FF6B6B',
+                            white: '#FAF7F8',
                             silver: '#E6EAF1',
                         },
                         dark: {
-                            950: '#0B0F17',
-                            900: '#111827',
-                            800: '#1B2638',
+                            950: '#080F17',
+                            900: '#121826',
+                            800: '#1A2233',
                             700: '#2D3A50',
                             600: '#34445F',
                             500: '#475569',
@@ -72,9 +76,9 @@
     <script>
         // Detect PWA/standalone mode
         (function() {
-            var isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+            var isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                                window.navigator.standalone === true;
-            
+
             // Add PWA mode header to all HTMX requests for better session handling
             if (isStandalone) {
                 document.body.addEventListener('htmx:configRequest', function(evt) {
@@ -82,7 +86,7 @@
                 });
             }
         })();
-        
+
         // Suppress WebSocket close errors from htmx ws extension during navigation
         (function() {
             var originalError = console.error;
@@ -99,44 +103,56 @@
         })();
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@600;700;800&display=swap');
-        
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
         html, body {
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
         }
-        
+
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
-        
+
+        h1, h2, h3, h4, h5, h6, .ui-label, .nav-label, button, .forge-wordmark {
+            font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+        }
+
+        code, pre, .mono {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
         :root {
             --brand-primary: {{ brand.primary_color }};
             --brand-secondary: {{ brand.secondary_color }};
             --brand-accent: {{ brand.accent_color }};
-            --forge-void: #0b0f17;
-            --forge-navy: #111827;
-            --forge-panel: #1b2638;
-            --forge-elevated: #2d3a50;
-            --forge-blue: #4db6ff;
-            --forge-amber: #ffc857;
-            --forge-silver: #e6eaf1;
-            --forge-border: rgba(230, 234, 241, 0.12);
+            --forge-void: #080F17;
+            --forge-navy: #121826;
+            --forge-panel: #1A2233;
+            --forge-elevated: #2D3A50;
+            --forge-blue: #4DB6FF;
+            --forge-amber: #FFC857;
+            --forge-violet: #7C5CFF;
+            --forge-green: #31C48D;
+            --forge-coral: #FF6B6B;
+            --forge-white: #FAF7F8;
+            --forge-silver: #E6EAF1;
+            --forge-border: rgba(250, 247, 248, 0.10);
             --forge-border-strong: rgba(77, 182, 255, 0.34);
-            --forge-glass: rgba(17, 24, 39, 0.72);
-            --forge-overlay: rgba(11, 15, 23, 0.72);
+            --forge-glass: rgba(18, 24, 38, 0.72);
+            --forge-overlay: rgba(8, 15, 23, 0.80);
         }
         [x-cloak] { display: none !important; }
         .htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
         .htmx-request .htmx-indicator { opacity: 1; }
         .htmx-request.htmx-indicator { opacity: 1; }
-        
+
         /* Futuristic space background */
         .forge-bg {
             background: linear-gradient(135deg, var(--forge-void) 0%, var(--forge-navy) 45%, var(--forge-panel) 100%);
             position: relative;
         }
-        
+
         .forge-bg::before {
             content: '';
             position: fixed;
@@ -144,14 +160,14 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: 
+            background:
                 radial-gradient(ellipse at 20% 80%, rgba(77, 182, 255, 0.14) 0%, transparent 50%),
                 radial-gradient(ellipse at 80% 20%, rgba(255, 200, 87, 0.08) 0%, transparent 50%),
                 radial-gradient(ellipse at 50% 50%, rgba(77, 182, 255, 0.07) 0%, transparent 70%);
             pointer-events: none;
             z-index: 0;
         }
-        
+
         /* Twinkling stars */
         .stars {
             position: fixed;
@@ -159,7 +175,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-image: 
+            background-image:
                 radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.3), transparent),
                 radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.2), transparent),
                 radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.3), transparent),
@@ -177,12 +193,12 @@
             pointer-events: none;
             z-index: 0;
         }
-        
+
         @keyframes twinkle {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
         }
-        
+
         /* Floating particles */
         .floating-particles {
             position: fixed;
@@ -194,7 +210,7 @@
             pointer-events: none;
             z-index: 0;
         }
-        
+
         .particle {
             position: absolute;
             width: 4px;
@@ -203,7 +219,7 @@
             border-radius: 50%;
             animation: float 8s infinite ease-in-out;
         }
-        
+
         .particle:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; }
         .particle:nth-child(2) { left: 20%; top: 60%; animation-delay: 1s; background: rgba(255, 200, 87, 0.5); }
         .particle:nth-child(3) { left: 30%; top: 40%; animation-delay: 2s; }
@@ -212,36 +228,36 @@
         .particle:nth-child(6) { left: 80%; top: 70%; animation-delay: 5s; background: rgba(14, 165, 233, 0.5); }
         .particle:nth-child(7) { left: 90%; top: 50%; animation-delay: 6s; }
         .particle:nth-child(8) { left: 15%; top: 85%; animation-delay: 7s; background: rgba(14, 165, 233, 0.5); }
-        
+
         @keyframes float {
             0%, 100% { transform: translateY(0) scale(1); opacity: 0.5; }
             50% { transform: translateY(-20px) scale(1.2); opacity: 0.9; }
         }
-        
+
         /* Custom scrollbar - dark theme */
         .scrollbar-thin::-webkit-scrollbar { width: 6px; }
         .scrollbar-thin::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
         .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.7); border-radius: 3px; }
         .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.8); }
-        
+
         /* Message hover actions */
         .message-item:hover .message-actions { opacity: 1; }
         .message-actions { opacity: 0; transition: opacity 150ms; }
-        
+
         /* Mention dropdown */
         .mention-dropdown { max-height: 200px; overflow-y: auto; }
-        
+
         /* Brand-colored elements */
         .bg-brand-primary { background-color: var(--brand-primary); }
         .text-brand-primary { color: var(--brand-primary); }
         .border-brand-primary { border-color: var(--brand-primary); }
-        .hover\\:bg-brand-primary:hover { background-color: var(--brand-primary); }
-        
+        .hover\:bg-brand-primary:hover { background-color: var(--brand-primary); }
+
         /* Futuristic glow effects */
         .glow-text { text-shadow: 0 0 30px rgba(77, 182, 255, 0.44); }
         .glow-border { box-shadow: 0 0 20px rgba(77, 182, 255, 0.28); }
         .glow-accent { box-shadow: 0 0 25px rgba(255, 200, 87, 0.24); }
-        
+
         /* Glass morphism effect */
         .glass {
             backdrop-filter: blur(20px) saturate(1.15);
@@ -249,7 +265,7 @@
             border: 1px solid var(--forge-border);
             box-shadow: inset 0 1px 0 rgba(230, 234, 241, 0.06), 0 14px 34px rgba(0, 0, 0, 0.28);
         }
-        
+
         .glass-dark {
             backdrop-filter: blur(22px) saturate(1.18);
             background: linear-gradient(145deg, rgba(27, 38, 56, 0.78), rgba(11, 15, 23, 0.82));
@@ -258,7 +274,7 @@
         }
 
         .forge-wordmark {
-            font-family: 'Orbitron', 'Inter', system-ui, sans-serif;
+            font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
             font-weight: 800;
             letter-spacing: 0.16em;
             text-transform: uppercase;
@@ -267,7 +283,7 @@
         }
 
         .forge-submark {
-            font-family: 'Orbitron', 'Inter', system-ui, sans-serif;
+            font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
             font-weight: 700;
             letter-spacing: 0.42em;
             text-transform: uppercase;
@@ -291,7 +307,7 @@
             flex-shrink: 0;
             background:
                 linear-gradient(145deg, rgba(230, 234, 241, 0.16), rgba(11, 15, 23, 0.18)),
-                linear-gradient(155deg, #39342d 0%, #0b0f17 48%, #1b2638 100%);
+                linear-gradient(155deg, #39342d 0%, #080F17 48%, #1A2233 100%);
             border: 1px solid rgba(230, 234, 241, 0.22);
             box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.18), 0 10px 26px rgba(0, 0, 0, 0.42), 0 0 20px rgba(77, 182, 255, 0.14);
         }
@@ -303,7 +319,7 @@
             border-radius: 0.32rem;
             background:
                 radial-gradient(circle at 50% 18%, rgba(230, 234, 241, 0.16), transparent 38%),
-                linear-gradient(180deg, #111827, #0b0f17);
+                linear-gradient(180deg, #121826, #080F17);
             border: 1px solid rgba(77, 182, 255, 0.18);
         }
 
@@ -345,7 +361,7 @@
             top: -0.38rem;
             left: 50%;
             transform: translateX(-50%);
-            font-family: 'Orbitron', 'Inter', system-ui, sans-serif;
+            font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
             font-size: 0.28rem;
             font-weight: 700;
             letter-spacing: 0.12em;
@@ -377,26 +393,68 @@
             box-shadow: 0 0 18px rgba(77, 182, 255, 0.10);
         }
 
+        /* Channel sidebar link states */
+        .channel-active {
+            background: rgba(77, 182, 255, 0.14);
+            color: #4DB6FF;
+            border: 1px solid rgba(77, 182, 255, 0.28);
+            border-radius: 0.5rem;
+        }
+        .channel-active span:first-child { color: #4DB6FF; }
+
+        .channel-unread {
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .channel-default {
+            color: rgba(230, 234, 241, 0.70);
+        }
+        .channel-default:hover {
+            background: rgba(250, 247, 248, 0.05);
+            color: #FAF7F8;
+        }
+
         .forge-primary-button {
-            background: linear-gradient(180deg, #4d8eff 0%, #1957b8 100%);
-            border: 1px solid rgba(77, 182, 255, 0.52);
-            box-shadow: inset 0 1px 0 rgba(230, 234, 241, 0.18), 0 14px 30px rgba(36, 112, 255, 0.24);
+            background: linear-gradient(180deg, #4DB6FF 0%, #1C56B8 100%);
+            border: 1px solid rgba(77, 182, 255, 0.50);
+            color: #FAF7F8;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            box-shadow: inset 0 1px 0 rgba(250,247,248,0.18), 0 4px 16px rgba(77,182,255,0.22);
+            transition: filter 150ms, box-shadow 150ms;
         }
 
         .forge-primary-button:hover {
-            filter: brightness(1.08);
-            box-shadow: inset 0 1px 0 rgba(230, 234, 241, 0.22), 0 16px 34px rgba(77, 182, 255, 0.28);
+            filter: brightness(1.10);
+            box-shadow: 0 6px 20px rgba(77,182,255,0.32);
         }
 
         .forge-secondary-button {
-            background: rgba(17, 24, 39, 0.76);
-            border: 1px solid var(--forge-border);
-            color: var(--forge-silver);
+            background: transparent;
+            border: 1px solid rgba(250,247,248,0.18);
+            color: #E6EAF1;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 500;
+            transition: border-color 150ms, background 150ms;
         }
 
         .forge-secondary-button:hover {
-            background: rgba(45, 58, 80, 0.72);
-            border-color: rgba(230, 234, 241, 0.22);
+            background: rgba(250,247,248,0.06);
+            border-color: rgba(250,247,248,0.30);
+        }
+
+        .forge-ghost-button {
+            background: transparent;
+            border: 1px solid transparent;
+            color: #94a3b8;
+            font-family: 'Space Grotesk', sans-serif;
+            transition: color 150ms, background 150ms;
+        }
+
+        .forge-ghost-button:hover {
+            background: rgba(77,182,255,0.08);
+            color: #4DB6FF;
         }
 
         .forge-chip {
@@ -417,20 +475,28 @@
         .forge-chip-mention { color: #ffe7ad; background: rgba(255, 200, 87, 0.18); border-color: rgba(255, 200, 87, 0.36); }
         .forge-chip-alert { color: #fecaca; background: rgba(220, 38, 38, 0.22); border-color: rgba(248, 113, 113, 0.32); }
 
-        .forge-status-dot {
-            width: 0.55rem;
-            height: 0.55rem;
-            border-radius: 999px;
-            background: #64748b;
-            box-shadow: 0 0 10px currentColor;
+        /* Badge components */
+        .unread-badge {
+            background: linear-gradient(180deg, var(--forge-blue), #2563eb);
+            border: 1px solid rgba(230, 234, 241, 0.18);
+            box-shadow: 0 0 12px rgba(77, 182, 255, 0.34);
         }
 
-        .forge-status-online { color: #4ade80; background: #4ade80; }
+        .forge-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; border-radius: 9px; font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 700; padding: 0 5px; }
+        .forge-badge-unread { background: #4DB6FF; color: #080F17; }
+        .forge-badge-mention { background: #7C5CFF; color: #FAF7F8; }
+        .forge-badge-decision { background: #FFC857; color: #080F17; }
+        .forge-badge-blocker { background: #FF6B6B; color: #FAF7F8; }
+        .forge-badge-build { background: #31C48D; color: #080F17; }
+
+        /* Status dots */
+        .forge-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+        .forge-status-online { background: #31C48D; box-shadow: 0 0 6px rgba(49,196,141,0.7); }
+        .forge-status-away { background: #FFC857; box-shadow: 0 0 6px rgba(255,200,87,0.6); }
+        .forge-status-dnd { background: #FF6B6B; box-shadow: 0 0 6px rgba(255,107,107,0.6); }
+        .forge-status-focus { background: #7C5CFF; box-shadow: 0 0 6px rgba(124,92,255,0.6); }
+        .forge-status-offline { background: #475569; }
         .forge-status-meeting { color: var(--forge-amber); background: var(--forge-amber); }
-        .forge-status-focus { color: #a855f7; background: #a855f7; }
-        .forge-status-away { color: #94a3b8; background: #94a3b8; }
-        .forge-status-dnd { color: #ef4444; background: #ef4444; }
-        .forge-status-offline { color: #64748b; background: #64748b; }
 
         .channel-link {
             border: 1px solid transparent;
@@ -481,7 +547,42 @@
         .forge-artifact-feature { color: var(--forge-blue); border-color: rgba(77, 182, 255, 0.32); }
         .forge-artifact-issue { color: #f87171; border-color: rgba(248, 113, 113, 0.32); }
         .forge-artifact-task { color: #4ade80; border-color: rgba(74, 222, 128, 0.30); }
-        
+
+        /* Search input */
+        .forge-search-input {
+            background: rgba(26,34,51,0.80);
+            border: 1px solid rgba(250,247,248,0.10);
+            border-radius: 8px;
+            color: #E6EAF1;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 150ms, box-shadow 150ms;
+        }
+        .forge-search-input:focus { border-color: rgba(77,182,255,0.50); box-shadow: 0 0 0 3px rgba(77,182,255,0.12); outline: none; }
+        .forge-search-input::placeholder { color: #475569; }
+
+        /* Message input */
+        .forge-message-input {
+            background: rgba(26,34,51,0.60);
+            border: 1px solid rgba(250,247,248,0.10);
+            border-radius: 12px;
+            color: #E6EAF1;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 150ms;
+        }
+        .forge-message-input:focus { border-color: rgba(77,182,255,0.40); outline: none; }
+
+        /* Send button */
+        .forge-send-button {
+            background: linear-gradient(135deg, #4DB6FF, #1C56B8);
+            border: none;
+            border-radius: 8px;
+            width: 36px; height: 36px;
+            display: inline-flex; align-items: center; justify-content: center;
+            color: #FAF7F8;
+            transition: filter 150ms, transform 100ms;
+        }
+        .forge-send-button:hover { filter: brightness(1.12); transform: scale(1.04); }
+
         /* Animations */
         @keyframes fade-in {
             from { opacity: 0; transform: translateY(-10px); }
@@ -490,13 +591,13 @@
         .animate-fade-in {
             animation: fade-in 0.3s ease-out forwards;
         }
-        
+
         /* Content layer - above background effects */
         .content-layer {
             position: relative;
             z-index: 1;
         }
-        
+
         /* Smooth transitions for theme */
         .theme-transition {
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
@@ -530,13 +631,13 @@
         <div class="particle"></div>
         <div class="particle"></div>
     </div>
-    
+
     {% block body %}
     <div class="min-h-full content-layer">
         {% block content %}{% endblock %}
     </div>
     {% endblock %}
-    
+
     <!-- Toast notifications -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
 
@@ -601,7 +702,7 @@
         </div>
     </div>
     {% endif %}
-    
+
     <!-- Session timeout warning modal -->
     <div id="session-timeout-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="session-timeout-title">
         <div class="flex items-center justify-center min-h-screen px-4">
@@ -614,11 +715,11 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                         </svg>
                     </div>
-                    
+
                     <h3 id="session-timeout-title" class="text-xl font-semibold text-white mb-2">Session Expiring Soon</h3>
                     <p class="text-gray-300 mb-2">Your session will expire in <span id="session-countdown" class="font-bold text-yellow-400">5:00</span></p>
                     <p class="text-sm text-gray-400 mb-6" id="session-timeout-message">Please save any unsaved work before continuing.</p>
-                    
+
                     <!-- Unsaved work indicator -->
                     <div id="unsaved-work-warning" class="hidden bg-red-500/20 border border-red-500/40 rounded-lg p-3 mb-6">
                         <div class="flex items-center text-red-300">
@@ -628,9 +729,9 @@
                             <span class="text-sm font-medium">You have unsaved changes that may be lost!</span>
                         </div>
                     </div>
-                    
+
                     <div class="flex flex-col sm:flex-row gap-3">
-                        <button type="button" onclick="sessionMonitor.extendSession()" 
+                        <button type="button" onclick="sessionMonitor.extendSession()"
                                 class="forge-primary-button flex-1 px-4 py-2.5 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--forge-blue)] focus:ring-offset-2 focus:ring-offset-gray-800">
                             Stay Logged In
                         </button>
@@ -643,7 +744,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Session expired modal (shown when session already expired) -->
     <div id="session-expired-modal" class="hidden fixed inset-0 z-[100] overflow-y-auto" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen px-4">
@@ -656,11 +757,11 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
                         </svg>
                     </div>
-                    
+
                     <h3 class="text-xl font-semibold text-white mb-2">Session Expired</h3>
                     <p class="text-gray-300 mb-6">Your session has expired. Please log in again to continue.</p>
-                    
-                    <a href="/auth/login" 
+
+                    <a href="/auth/login"
                        class="forge-primary-button inline-block w-full px-4 py-2.5 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--forge-blue)]">
                         Log In Again
                     </a>
@@ -675,8 +776,8 @@
             <div class="fixed inset-0 bg-black/75 transition-opacity" onclick="closeCommandPalette()"></div>
             <div class="relative glass-dark rounded-lg shadow-xl transform transition-all w-full max-w-lg">
                 <div class="p-4">
-                    <input type="text" 
-                           id="command-input" 
+                    <input type="text"
+                           id="command-input"
                            class="w-full px-4 py-3 text-lg border-0 bg-transparent text-white placeholder-gray-500 focus:ring-0 focus:outline-none"
                            placeholder="Type a command or search..."
                            autocomplete="off">
@@ -687,7 +788,7 @@
             </div>
         </div>
     </div>
-    
+
     <script src="/static/app.js"></script>
     <script>
         // Fix htmx ws.js close error when navigating away
@@ -696,7 +797,7 @@
             // Mark that we're navigating away to suppress errors
             window._navigatingAway = true;
         });
-        
+
         // Close native WebSocket on HTMX page swaps
         document.addEventListener('htmx:beforeSwap', function(e) {
             if (window._forgeSocket) {
@@ -704,14 +805,14 @@
                 window._forgeSocket = null;
             }
         });
-        
+
         // Register service worker for PWA and push notifications
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
                     .then(registration => {
                         console.log('Service Worker registered:', registration.scope);
-                        
+
                         // If a new SW is already waiting, show the update banner
                         if (registration.waiting) {
                             console.log('New SW waiting — showing update banner');
@@ -744,12 +845,12 @@
                     .catch(error => {
                         console.error('Service Worker registration failed:', error);
                     });
-                
+
                 // Listen for messages from Service Worker (push notifications)
                 navigator.serviceWorker.addEventListener('message', (event) => {
                     if (event.data && event.data.type === 'PUSH_RECEIVED') {
                         console.log('Push notification received in app:', event.data);
-                        // Play in-app sound as backup (system notification may not play sound 
+                        // Play in-app sound as backup (system notification may not play sound
                         // when app is in foreground or system sounds are muted)
                         if (window.playNotificationSound) {
                             window.playNotificationSound();
@@ -762,7 +863,7 @@
                 });
             });
         }
-        
+
         // ============================================
         // Push Notification Prompt
         // ============================================
@@ -771,22 +872,22 @@
             const promptEl = document.getElementById('push-notification-prompt');
             const enableBtn = document.getElementById('enable-push-btn');
             const dismissBtn = document.getElementById('dismiss-push-prompt');
-            
+
             if (!promptEl) return;
-            
+
             // Check if user dismissed the prompt recently (don't show for 7 days)
             const dismissedAt = localStorage.getItem('pushPromptDismissed');
             if (dismissedAt) {
                 const daysSinceDismiss = (Date.now() - parseInt(dismissedAt)) / (1000 * 60 * 60 * 24);
                 if (daysSinceDismiss < 7) return;
             }
-            
+
             // Check browser support
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 console.log('Push notifications not supported');
                 return;
             }
-            
+
             // Check if server has push configured
             try {
                 const response = await fetch('/push/vapid-public-key');
@@ -794,7 +895,7 @@
             } catch (e) {
                 return;
             }
-            
+
             // Check if already subscribed - verify both browser AND server have the subscription
             try {
                 console.log('[Push Prompt] Checking for existing subscription...');
@@ -833,14 +934,14 @@
                 console.log('[Push Prompt] Could not check push subscription:', e);
                 // Continue to show prompt
             }
-            
+
             // Check permission state
             console.log('[Push Prompt] Notification.permission:', Notification.permission);
             if (Notification.permission === 'denied') {
                 console.log('[Push Prompt] Permission denied, not prompting');
                 return; // User blocked notifications, don't prompt
             }
-            
+
             // Helper function to subscribe
             async function subscribeToNotifications() {
                 console.log('[Push] subscribeToNotifications starting...');
@@ -850,7 +951,7 @@
                     const response = await fetch('/push/vapid-public-key');
                     const { publicKey } = await response.json();
                     console.log('[Push] Got VAPID key');
-                    
+
                     // Subscribe
                     console.log('[Push] Waiting for SW ready...');
                     const registration = await navigator.serviceWorker.ready;
@@ -860,7 +961,7 @@
                         applicationServerKey: urlBase64ToUint8Array(publicKey)
                     });
                     console.log('[Push] Subscription created:', subscription.endpoint);
-                    
+
                     // Convert keys to base64url
                     const arrayBufferToBase64url = (buffer) => {
                         const bytes = new Uint8Array(buffer);
@@ -870,20 +971,20 @@
                         }
                         return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
                     };
-                    
+
                     // Send to server
                     console.log('[Push] Sending subscription to server...');
                     const formData = new FormData();
                     formData.append('endpoint', subscription.endpoint);
                     formData.append('p256dh', arrayBufferToBase64url(subscription.getKey('p256dh')));
                     formData.append('auth', arrayBufferToBase64url(subscription.getKey('auth')));
-                    
+
                     const subResponse = await fetch('/push/subscribe', {
                         method: 'POST',
                         body: formData,
                     });
                     console.log('[Push] Server response:', subResponse.status);
-                    
+
                     if (subResponse.ok) {
                         console.log('[Push] Successfully subscribed to push notifications');
                         return true;
@@ -896,7 +997,7 @@
                 }
                 return false;
             }
-            
+
             if (Notification.permission === 'granted') {
                 // Permission granted but no Browser subscription - auto-subscribe silently
                 console.log('[Push Prompt] Permission granted but no subscription - auto-subscribing...');
@@ -914,36 +1015,36 @@
                 }
                 // If auto-subscribe failed, show the prompt as fallback
             }
-            
+
             // Show the prompt with a slight delay
             setTimeout(() => {
                 promptEl.classList.remove('hidden');
             }, 2000);
-            
+
             // Handle enable button
             enableBtn.addEventListener('click', async () => {
                 try {
                     enableBtn.textContent = 'Enabling...';
                     enableBtn.disabled = true;
-                    
+
                     // Request permission
                     const permission = await Notification.requestPermission();
                     if (permission !== 'granted') {
                         promptEl.classList.add('hidden');
                         return;
                     }
-                    
+
                     // Get VAPID public key
                     const response = await fetch('/push/vapid-public-key');
                     const { publicKey } = await response.json();
-                    
+
                     // Subscribe
                     const registration = await navigator.serviceWorker.ready;
                     const subscription = await registration.pushManager.subscribe({
                         userVisibleOnly: true,
                         applicationServerKey: urlBase64ToUint8Array(publicKey)
                     });
-                    
+
                     // Convert keys to base64url
                     const arrayBufferToBase64url = (buffer) => {
                         const bytes = new Uint8Array(buffer);
@@ -953,18 +1054,18 @@
                         }
                         return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
                     };
-                    
+
                     // Send to server
                     const formData = new FormData();
                     formData.append('endpoint', subscription.endpoint);
                     formData.append('p256dh', arrayBufferToBase64url(subscription.getKey('p256dh')));
                     formData.append('auth', arrayBufferToBase64url(subscription.getKey('auth')));
-                    
+
                     await fetch('/push/subscribe', {
                         method: 'POST',
                         body: formData,
                     });
-                    
+
                     promptEl.classList.add('hidden');
                     if (window.showToast) {
                         window.showToast('Notifications enabled! You\'ll now receive alerts for new messages.', 'success');
@@ -978,7 +1079,7 @@
                     }
                 }
             });
-            
+
             // Handle dismiss button
             dismissBtn.addEventListener('click', () => {
                 promptEl.classList.add('hidden');
@@ -986,18 +1087,18 @@
             });
         })();
         {% endif %}
-        
+
         // PWA Install prompt handling
         if (!window._pwaInstallInitialized) {
             window._pwaInstallInitialized = true;
             window.deferredPrompt = null;
-            
+
             // Detect iOS
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                                  window.navigator.standalone === true;
-            
+
             // Show iOS install banner if in Safari and not installed
             if (isIOS && !isStandalone && !sessionStorage.getItem('iosInstallDismissed')) {
                 // Wait for page to load
@@ -1005,12 +1106,12 @@
                     showIOSInstallBanner();
                 }, 2000);
             }
-            
+
             // Handle app installed event
             window.addEventListener('appinstalled', () => {
                 console.log('PWA installed successfully');
                 window.deferredPrompt = null;
-                
+
                 // Hide install button and banners
                 const installBtn = document.getElementById('pwa-install-btn');
                 if (installBtn) {
@@ -1018,7 +1119,7 @@
                 }
                 dismissAndroidBanner();
             });
-            
+
             // Function to trigger PWA install
             window.installPWA = async function() {
                 if (window.deferredPrompt) {
@@ -1030,11 +1131,11 @@
                     dismissAndroidBanner();
                 }
             };
-            
+
             // Show Android install banner (Chrome/Edge on Android)
             function showAndroidInstallBanner() {
                 if (!window.deferredPrompt) return;
-                
+
                 const banner = document.createElement('div');
                 banner.id = 'android-install-banner';
                 banner.className = 'fixed bottom-0 left-0 right-0 bg-dark-900/95 border-t border-white/10 p-4 z-50 backdrop-blur-lg transform transition-transform duration-300';
@@ -1057,7 +1158,7 @@
                 `;
                 document.body.appendChild(banner);
             }
-            
+
             window.dismissAndroidBanner = function() {
                 const banner = document.getElementById('android-install-banner');
                 if (banner) {
@@ -1066,18 +1167,18 @@
                     sessionStorage.setItem('androidInstallDismissed', 'true');
                 }
             };
-            
+
             // Show Android banner when install prompt is available
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 window.deferredPrompt = e;
-                
+
                 // Show install button if it exists
                 const installBtn = document.getElementById('pwa-install-btn');
                 if (installBtn) {
                     installBtn.classList.remove('hidden');
                 }
-                
+
                 // Show Android install banner if not dismissed
                 if (!sessionStorage.getItem('androidInstallDismissed')) {
                     setTimeout(() => {
@@ -1085,25 +1186,25 @@
                     }, 3000);
                 }
             });
-            
+
             // Show iOS-specific install banner (detects Safari vs Chrome)
             function showIOSInstallBanner() {
                 const banner = document.createElement('div');
                 banner.id = 'ios-install-banner';
                 banner.className = 'fixed bottom-0 left-0 right-0 bg-dark-900/95 border-t border-white/10 p-4 z-50 backdrop-blur-lg transform transition-transform duration-300';
-                
+
                 // Detect if using Chrome on iOS (CriOS) vs Safari
                 const isChromeIOS = /CriOS/.test(navigator.userAgent);
                 const isFirefoxIOS = /FxiOS/.test(navigator.userAgent);
                 const isEdgeIOS = /EdgiOS/.test(navigator.userAgent);
                 const isOtherBrowser = isChromeIOS || isFirefoxIOS || isEdgeIOS;
-                
+
                 // Safari share icon (square with arrow up)
                 const safariShareIcon = `<svg class="w-4 h-4 mx-1 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a1 1 0 0 1 1 1v10.586l2.293-2.293a1 1 0 0 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L11 13.586V3a1 1 0 0 1 1-1z" transform="rotate(180 12 12)"/><path d="M5 17a1 1 0 0 1 1 1v2h12v-2a1 1 0 1 1 2 0v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z" transform="rotate(180 12 12)"/></svg>`;
-                
+
                 // Chrome menu icon (three dots)
                 const chromeMenuIcon = `<svg class="w-4 h-4 mx-1 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>`;
-                
+
                 let instructions;
                 if (isChromeIOS) {
                     instructions = `Tap the <span class="inline-flex items-center">${chromeMenuIcon}</span> menu, then tap <strong class="text-white">Add to Home Screen</strong>`;
@@ -1113,7 +1214,7 @@
                     // Safari or unknown - assume Safari
                     instructions = `Tap <span class="inline-flex items-center">${safariShareIcon}</span> Share at the bottom, scroll down, and tap <strong class="text-white">Add to Home Screen</strong>`;
                 }
-                
+
                 banner.innerHTML = `
                     <div class="max-w-lg mx-auto flex items-center space-x-4">
                         <img src="/static/icons/icon-72x72.png" alt="Forge" class="w-12 h-12 rounded-xl">
@@ -1133,7 +1234,7 @@
                 `;
                 document.body.appendChild(banner);
             }
-            
+
             window.dismissIOSBanner = function() {
                 const banner = document.getElementById('ios-install-banner');
                 if (banner) {
@@ -1143,7 +1244,7 @@
                 }
             };
         }
-        
+
         // Utility function for base64url decoding (used by push notifications)
         function urlBase64ToUint8Array(base64String) {
             const padding = '='.repeat((4 - base64String.length % 4) % 4);

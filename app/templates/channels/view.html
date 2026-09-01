@@ -9,9 +9,9 @@
     
     <!-- Mobile sidebar -->
     <div id="mobile-sidebar" class="fixed inset-y-0 left-0 z-50 w-72 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden">
-        <div class="flex flex-col h-full glass-dark border-r border-white/10">
+        <div class="flex flex-col h-full glass-dark border-r">
             <!-- Logo - Floating Communicator Badge -->
-            <div class="flex items-center justify-between h-12 px-4 border-b border-white/10" style="background: linear-gradient(135deg, {{ brand.secondary_color }} 0%, rgba(15,23,42,0.9) 100%);">
+            <div class="flex items-center justify-between h-12 px-4 border-b border-white/10" style="background: linear-gradient(135deg, {{ brand.secondary_color }} 0%, rgba(8,15,23,0.90) 100%);">
                 <a href="/workspaces" class="flex items-center space-x-3 group">
                     <span class="forge-device-mark" style="width: 2rem; height: 2rem;">
                         <span class="forge-signal-mark" aria-hidden="true">
@@ -39,21 +39,21 @@
                 </a>
                 <span class="text-white font-semibold truncate">{{ workspace.name }}</span>
             </div>
-            
+
             <!-- Channel list -->
             <div class="flex-1 flex flex-col overflow-y-auto scrollbar-thin">
                 {% include "partials/channel_sidebar.html" %}
             </div>
-            
+
             <!-- User footer -->
-            <div class="flex-shrink-0 flex bg-dark-900/70 border-t border-white/10 p-4">
+            <div class="flex-shrink-0 flex bg-forge-navy/70 border-t border-white/10 p-4">
                 <div class="flex items-center w-full">
                     <a href="/profile" class="flex items-center flex-1 group">
                         {% if user.avatar_url %}
                         <img src="{{ user.avatar_url }}" alt="{{ user.display_name }}" class="w-8 h-8 rounded-full object-cover ring-2 ring-white/20">
                         {% else %}
-                        <div class="w-8 h-8 rounded-full bg-blue-500/30 border border-blue-400/50 flex items-center justify-center">
-                            <span class="text-blue-300 text-sm font-medium">{{ user.display_name[0] }}</span>
+                        <div class="w-8 h-8 rounded-full bg-forge-blue/25 border border-forge-blue/40 flex items-center justify-center">
+                            <span class="text-forge-blue text-sm font-medium">{{ user.display_name[0] }}</span>
                         </div>
                         {% endif %}
                         <div class="ml-3">
@@ -73,12 +73,12 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Desktop Sidebar -->
     <div class="hidden md:flex md:flex-shrink-0">
-        <div class="flex flex-col w-64 glass-dark border-r border-white/10">
+        <div class="flex flex-col w-64 glass-dark border-r">
             <!-- Logo - Floating Communicator Badge -->
-            <div class="flex items-center h-12 px-4 border-b border-white/10" style="background: linear-gradient(135deg, {{ brand.secondary_color }} 0%, rgba(15,23,42,0.9) 100%);">
+            <div class="flex items-center h-12 px-4 border-b border-white/10" style="background: linear-gradient(135deg, {{ brand.secondary_color }} 0%, rgba(8,15,23,0.90) 100%);">
                 <a href="/workspaces" class="flex items-center space-x-3 group">
                     <span class="forge-device-mark" style="width: 2rem; height: 2rem;">
                         <span class="forge-signal-mark" aria-hidden="true">
@@ -108,14 +108,14 @@
             </div>
             
             <!-- User footer -->
-            <div class="flex-shrink-0 flex bg-dark-900/70 border-t border-white/10 p-4">
+            <div class="flex-shrink-0 flex bg-forge-navy/70 border-t border-white/10 p-4">
                 <div class="flex items-center w-full">
                     <a href="/profile" class="flex items-center flex-1 group">
                         {% if user.avatar_url %}
                         <img src="{{ user.avatar_url }}" alt="{{ user.display_name }}" class="w-8 h-8 rounded-full object-cover ring-2 ring-white/20">
                         {% else %}
-                        <div class="w-8 h-8 rounded-full bg-blue-500/30 border border-blue-400/50 flex items-center justify-center">
-                            <span class="text-blue-300 text-sm font-medium">{{ user.display_name[0] }}</span>
+                        <div class="w-8 h-8 rounded-full bg-forge-blue/25 border border-forge-blue/40 flex items-center justify-center">
+                            <span class="text-forge-blue text-sm font-medium">{{ user.display_name[0] }}</span>
                         </div>
                         {% endif %}
                         <div class="ml-3">
@@ -142,7 +142,7 @@
     <!-- Main content -->
     <div class="flex flex-col w-0 flex-1 overflow-hidden">
         <!-- Channel header -->
-        <div class="relative z-10 flex-shrink-0 flex h-16 glass-dark border-b border-white/10">
+        <div class="relative z-10 flex-shrink-0 flex h-16 glass-dark border-b border-forge-border">
             <div class="flex-1 px-4 flex items-center justify-between">
                 <!-- Mobile menu button -->
                 <button onclick="openMobileSidebar()" class="md:hidden p-2 -ml-2 mr-2 text-gray-400 hover:text-white rounded-md hover:bg-white/10">
@@ -153,15 +153,15 @@
                 <div class="flex-1 min-w-0">
                     {% if channel.is_dm and dm_partner %}
                     <a href="/profile/user/{{ dm_partner.id }}" class="group inline-flex items-center">
-                        <h1 class="text-xl font-semibold text-white truncate group-hover:text-blue-400 transition-colors">{{ channel.display_name }}</h1>
+                        <h1 class="text-xl font-semibold text-white truncate group-hover:text-blue-400 transition-colors" style="font-family: 'Space Grotesk', sans-serif;">{{ channel.display_name }}</h1>
                         <svg class="w-4 h-4 ml-2 text-gray-500 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                         </svg>
                     </a>
                     {% else %}
-                    <h1 class="text-xl font-semibold text-white truncate">{{ channel.display_name }}</h1>
+                    <h1 class="text-xl font-semibold text-white truncate" style="font-family: 'Space Grotesk', sans-serif;">{{ channel.display_name }}</h1>
                     {% endif %}
-                    <p id="channel-topic" class="text-sm text-gray-400 truncate hidden sm:block">{{ channel.topic or "No topic set" }}</p>
+                    <p id="channel-topic" class="text-sm text-forge-silver/55 truncate hidden sm:block">{{ channel.topic or "No topic set" }}</p>
                 </div>
                 <div class="ml-4 flex items-center md:ml-6 space-x-2">
                     <!-- Export messages button -->
@@ -393,21 +393,26 @@
                     
                     <!-- Input row with textarea -->
                     <div class="flex space-x-4">
-                        <textarea name="body" 
+                        <textarea name="body"
                                id="message-input"
                                rows="4"
-                               class="flex-1 rounded-lg border border-white/20 bg-dark-800/50 text-white placeholder-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500/50 resize-none p-3"
+                               class="forge-message-input flex-1 rounded-xl border border-forge-border bg-forge-panel/60 text-forge-silver placeholder-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500/50 resize-none p-3"
                                placeholder="Message {{ channel.display_name }}... (Markdown supported: **bold**, *italic*, `code`)"
                                autocomplete="off"
                                required></textarea>
                         <button type="submit"
-                                class="forge-primary-button inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all h-fit self-end">
+                                class="forge-send-button inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all h-fit self-end">
                             <svg class="w-5 h-5 mr-1 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                             </svg>
                             Send
                         </button>
                     </div>
+                    <p class="mt-1.5 text-xs text-gray-500">
+                        <kbd class="px-1 py-0.5 glass rounded text-[10px] border border-white/15">Return</kbd> to send
+                        &nbsp;·&nbsp;
+                        <kbd class="px-1 py-0.5 glass rounded text-[10px] border border-white/15">Shift</kbd> + <kbd class="px-1 py-0.5 glass rounded text-[10px] border border-white/15">Return</kbd> for a new line
+                    </p>
                 </form>
                 
                 <!-- Hidden file upload form -->
@@ -509,10 +514,11 @@
     
     // Keyboard shortcuts
     document.getElementById('message-input').addEventListener('keydown', function(e) {
-        // Ctrl/Cmd + Enter to submit
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        // Enter to send; Shift+Enter inserts a new line
+        if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             this.closest('form').requestSubmit();
+            return;
         }
         // Ctrl/Cmd + B for bold
         if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
@@ -752,15 +758,57 @@
     // Called whenever the user sees new messages so the sidebar badge clears.
     // ============================================
     (function() {
+        const CHANNEL_ID = {{ channel.id }};
+        const WORKSPACE_ID = {{ workspace.id }};
         let _readTimer = null;
+        let _sidebarRefreshTimer = null;
+
+        // Immediately remove the unread badge from the current channel in the
+        // sidebar DOM without waiting for a server round-trip.
+        function clearSidebarBadgeNow() {
+            document.querySelectorAll('[data-channel-id="' + CHANNEL_ID + '"] .unread-badge').forEach(function(el) {
+                el.remove();
+            });
+            // Strip the bold/white unread style from the channel link itself
+            document.querySelectorAll('[data-channel-id="' + CHANNEL_ID + '"]').forEach(function(el) {
+                el.classList.remove('text-white', 'font-bold', 'channel-unread');
+                if (!el.classList.contains('channel-active')) {
+                    el.classList.add('channel-default');
+                }
+            });
+        }
+
+        // Re-fetch the sidebar partial so all other channels' badges are accurate.
+        function refreshSidebar() {
+            clearTimeout(_sidebarRefreshTimer);
+            _sidebarRefreshTimer = setTimeout(function() {
+                htmx.ajax('GET', '/workspaces/' + WORKSPACE_ID + '/channels?current_channel_id=' + CHANNEL_ID, {
+                    target: '#channel-sidebar-content',
+                    swap: 'innerHTML',
+                    headers: { 'HX-Request': 'true' }
+                });
+            }, 1200);
+        }
+
         window.markChannelRead = function() {
             clearTimeout(_readTimer);
             _readTimer = setTimeout(function() {
-                fetch('/workspaces/{{ workspace.id }}/channels/{{ channel.id }}/messages/read', {
+                clearSidebarBadgeNow();
+                fetch('/workspaces/' + WORKSPACE_ID + '/channels/' + CHANNEL_ID + '/messages/read', {
                     method: 'POST',
+                }).then(function() {
+                    refreshSidebar();
+                    // Re-sync the app/notification badge with the server so it
+                    // resets once the channel is read.
+                    if (window.notificationCenter) {
+                        window.notificationCenter.syncWithServer();
+                    }
                 }).catch(function() {});
             }, 800);
         };
+
+        // Mark as read on page load (channel is being actively viewed)
+        markChannelRead();
 
         // Mark as read when the user switches back to this tab
         document.addEventListener('visibilitychange', function() {
@@ -1439,10 +1487,12 @@
                 <!-- Message composer -->
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Message (optional):</label>
-                    <textarea id="dm-message-input" 
+                    <textarea id="dm-message-input"
                               rows="3"
                               class="w-full rounded-lg bg-dark-800/50 border border-white/20 text-white placeholder-gray-500 px-4 py-2 focus:border-blue-500 focus:ring-blue-500/50 resize-none"
-                              placeholder="Write your first message..."></textarea>
+                              placeholder="Write your first message..."
+                              onkeydown="if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); window.sendDMAndRedirect(); }"></textarea>
+                    <p class="mt-1 text-xs text-gray-500">Return to send · Shift+Return for a new line</p>
                 </div>
             </div>
             

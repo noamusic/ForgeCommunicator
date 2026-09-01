@@ -49,12 +49,19 @@ struct AddAccountSheet: View {
                 }
 
                 if case .add = mode {
-                    Picker("Source Type", selection: $selectedType) {
-                        ForEach(AccountType.allCases) { type in
-                            Text(type.displayLabel).tag(type)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Source Type")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Picker("Source Type", selection: $selectedType) {
+                            ForEach(AccountType.allCases) { type in
+                                Text(type.displayLabel).tag(type)
+                            }
                         }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
                     }
-                    .pickerStyle(.segmented)
                 }
 
                 TextField("Display name", text: $displayName)

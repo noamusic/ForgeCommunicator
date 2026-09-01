@@ -23,13 +23,6 @@ final class KeychainKeyStore {
                 return existing
             }
 
-            // One-time migration path: if keychain has an existing key, copy it
-            // to the file fallback so encrypted config remains readable.
-            if let existing = keychainFetch() {
-                try? fileSave(existing)
-                return existing
-            }
-
             let newKeyData = Data((0..<32).map { _ in UInt8.random(in: 0...255) })
             try fileSave(newKeyData)
             return newKeyData

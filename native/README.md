@@ -1,6 +1,6 @@
 # ForgeCommunicator (Combined Native App)
 
-ForgeCommunicator is a unified macOS desktop shell for managing multiple chat sources from one native app, including Communicator, WhatsApp Web, and Signal sessions.
+ForgeCommunicator is a unified macOS desktop shell for managing multiple chat sources from one native app, including Communicator, WhatsApp Web, Signal sessions, and Telegram Web.
 
 This MVP does not reverse engineer protocols, ingest messages, bypass platform security, or sync any cloud data.
 
@@ -25,13 +25,14 @@ This MVP does not reverse engineer protocols, ingest messages, bypass platform s
 - Communicator web workspace source with source-level server URL config
 - WhatsApp web workspace container per source
 - Signal isolated process launch attempt per source profile (when Signal.app exists)
+- Telegram Web source support
 
 ## Source Metadata Shape
 
 Each source is persisted with:
 
 - id (UUID)
-- type (communicator, whatsapp, signal)
+- type (communicator, whatsapp, signal, telegram)
 - displayName
 - profilePath
 - createdAt

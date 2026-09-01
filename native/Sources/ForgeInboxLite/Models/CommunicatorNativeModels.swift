@@ -29,6 +29,16 @@ struct CommunicatorAuthResponse: Codable, Equatable {
     let user: CommunicatorAuthUser
 }
 
+struct CommunicatorOAuthStartResponse: Codable {
+    let authURL: String
+    let state: String
+
+    private enum CodingKeys: String, CodingKey {
+        case authURL = "auth_url"
+        case state
+    }
+}
+
 struct CommunicatorConversationAuthor: Codable, Equatable {
     let id: Int
     let displayName: String
@@ -61,7 +71,7 @@ struct CommunicatorConversation: Codable, Identifiable, Equatable {
     let workspaceName: String
     let name: String
     let isDM: Bool
-    let unreadCount: Int
+    var unreadCount: Int
     let bridgedPlatform: String?
     let lastMessage: CommunicatorConversationMessage?
     let members: [CommunicatorUserProfile]
@@ -159,4 +169,44 @@ struct CommunicatorMessage: Codable, Identifiable, Equatable {
 
 struct CommunicatorSendMessageRequest: Codable {
     let body: String
+}
+
+/// Full member/user profile from /workspaces/{id}/members and /users/{id}.
+struct CommunicatorMemberProfile: Codable, Equatable, Identifiable {
+    let id: Int
+    let email: String
+    let displayName: String
+    let bio: String?
+    let title: String?
+    let avatarURL: String?
+    let status: String?
+    let statusMessage: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case email
+        case displayName = "display_name"
+        case bio
+        case title
+        case avatarURL = "avatar_url"
+        case status
+        case statusMessage = "status_message"
+    }
+}
+
+/// Minimal channel payload returned by POST /workspaces/{id}/dm.
+struct CommunicatorChannelSummary: Codable, Equatable {
+    let id: Int
+    let workspaceID: Int
+    let name: String
+    let displayName: String
+    let isDM: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case workspaceID = "workspace_id"
+        case name
+        case displayName = "display_name"
+        case isDM = "is_dm"
+    }
 }

@@ -21,6 +21,7 @@
 		A1000000000000000000000C /* CommunicatorProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* CommunicatorProvider.swift */; };
 		A1000000000000000000000D /* WhatsAppProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D /* WhatsAppProvider.swift */; };
 		A1000000000000000000000E /* SignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E /* SignalProvider.swift */; };
+		A100000000000000000000E1 /* IRCProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000E2 /* IRCProvider.swift */; };
 		A1000000000000000000000F /* ForgeTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F /* ForgeTheme.swift */; };
 		A100000000000000000000A1 /* ForgeGlassSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000A2 /* ForgeGlassSurface.swift */; };
 		A100000000000000000000A3 /* ForgeBackgroundLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000A4 /* ForgeBackgroundLayer.swift */; };
@@ -33,6 +34,16 @@
 		A100000000000000000000C3 /* CommunicatorAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000C4 /* CommunicatorAPIClient.swift */; };
 		A100000000000000000000C5 /* NativeCommunicatorStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000C6 /* NativeCommunicatorStore.swift */; };
 		A100000000000000000000C7 /* NativeCommunicatorHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000C8 /* NativeCommunicatorHomeView.swift */; };
+		A100000000000000000000D1 /* MessageSoundPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000D2 /* MessageSoundPlayer.swift */; };
+		A100000000000000000000D3 /* IMWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000D4 /* IMWindowManager.swift */; };
+		A100000000000000000000D5 /* ConversationRailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000D6 /* ConversationRailView.swift */; };
+		A100000000000000000000D7 /* FloatingChatWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000D8 /* FloatingChatWindowView.swift */; };
+		A100000000000000000000D9 /* MenuBarIMController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000DA /* MenuBarIMController.swift */; };
+		A100000000000000000000DB /* chirp.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000DC /* chirp.mp3 */; };
+		A100000000000000000000DD /* RailLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000DE /* RailLoginView.swift */; };
+		A100000000000000000000DF /* CallPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000E0 /* CallPickerView.swift */; };
+		A100000000000000000000E5 /* UserProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000E6 /* UserProfileView.swift */; };
+		A100000000000000000000E3 /* NewDMSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000E4 /* NewDMSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -51,6 +62,7 @@
 		A1000000000000000000001C /* CommunicatorProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Providers/CommunicatorProvider.swift; sourceTree = SOURCE_ROOT; };
 		A1000000000000000000001D /* WhatsAppProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Providers/WhatsAppProvider.swift; sourceTree = SOURCE_ROOT; };
 		A1000000000000000000001E /* SignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Providers/SignalProvider.swift; sourceTree = SOURCE_ROOT; };
+		A100000000000000000000E2 /* IRCProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Providers/IRCProvider.swift; sourceTree = SOURCE_ROOT; };
 		A1000000000000000000001F /* ForgeTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/UI/ForgeTheme.swift; sourceTree = SOURCE_ROOT; };
 		A100000000000000000000A2 /* ForgeGlassSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/UI/ForgeGlassSurface.swift; sourceTree = SOURCE_ROOT; };
 		A100000000000000000000A4 /* ForgeBackgroundLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/UI/ForgeBackgroundLayer.swift; sourceTree = SOURCE_ROOT; };
@@ -63,6 +75,16 @@
 		A100000000000000000000C4 /* CommunicatorAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Services/CommunicatorAPIClient.swift; sourceTree = SOURCE_ROOT; };
 		A100000000000000000000C6 /* NativeCommunicatorStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Services/NativeCommunicatorStore.swift; sourceTree = SOURCE_ROOT; };
 		A100000000000000000000C8 /* NativeCommunicatorHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Views/Native/NativeCommunicatorHomeView.swift; sourceTree = SOURCE_ROOT; };
+		A100000000000000000000D2 /* MessageSoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Services/MessageSoundPlayer.swift; sourceTree = SOURCE_ROOT; };
+		A100000000000000000000D4 /* IMWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Services/IMWindowManager.swift; sourceTree = SOURCE_ROOT; };
+		A100000000000000000000D6 /* ConversationRailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Views/IM/ConversationRailView.swift; sourceTree = SOURCE_ROOT; };
+		A100000000000000000000D8 /* FloatingChatWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Views/IM/FloatingChatWindowView.swift; sourceTree = SOURCE_ROOT; };
+		A100000000000000000000DA /* MenuBarIMController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Views/IM/MenuBarIMController.swift; sourceTree = SOURCE_ROOT; };
+		A100000000000000000000DE /* RailLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Views/IM/RailLoginView.swift; sourceTree = SOURCE_ROOT; };
+		A100000000000000000000E0 /* CallPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Views/IM/CallPickerView.swift; sourceTree = SOURCE_ROOT; };
+		A100000000000000000000E6 /* UserProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Views/IM/UserProfileView.swift; sourceTree = SOURCE_ROOT; };
+		A100000000000000000000E4 /* NewDMSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ForgeInboxLite/Views/IM/NewDMSheet.swift; sourceTree = SOURCE_ROOT; };
+		A100000000000000000000DC /* chirp.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Sources/ForgeInboxLite/chirp.mp3; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -145,6 +167,7 @@
 				A1000000000000000000001C /* CommunicatorProvider.swift */,
 				A1000000000000000000001D /* WhatsAppProvider.swift */,
 				A1000000000000000000001E /* SignalProvider.swift */,
+				A100000000000000000000E2 /* IRCProvider.swift */,
 			);
 			path = ForgeInboxLite/Providers;
 			sourceTree = SOURCE_ROOT;
@@ -240,6 +263,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A100000000000000000000B3 /* Assets.xcassets in Resources */,
+				A100000000000000000000DB /* chirp.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -269,12 +293,22 @@
 				A1000000000000000000000C /* CommunicatorProvider.swift in Sources */,
 				A1000000000000000000000D /* WhatsAppProvider.swift in Sources */,
 				A1000000000000000000000E /* SignalProvider.swift in Sources */,
+				A100000000000000000000E1 /* IRCProvider.swift in Sources */,
 				A1000000000000000000000F /* ForgeTheme.swift in Sources */,
 				A100000000000000000000A1 /* ForgeGlassSurface.swift in Sources */,
 				A100000000000000000000A3 /* ForgeBackgroundLayer.swift in Sources */,
 				A100000000000000000000A5 /* ForgeBadgeIcon.swift in Sources */,
 				A100000000000000000000B1 /* ForgeLogoIcon.swift in Sources */,
 				A100000000000000000000A7 /* ForgeHeaderBar.swift in Sources */,
+				A100000000000000000000D1 /* MessageSoundPlayer.swift in Sources */,
+				A100000000000000000000D3 /* IMWindowManager.swift in Sources */,
+				A100000000000000000000D5 /* ConversationRailView.swift in Sources */,
+				A100000000000000000000D7 /* FloatingChatWindowView.swift in Sources */,
+				A100000000000000000000D9 /* MenuBarIMController.swift in Sources */,
+				A100000000000000000000DD /* RailLoginView.swift in Sources */,
+				A100000000000000000000DF /* CallPickerView.swift in Sources */,
+				A100000000000000000000E5 /* UserProfileView.swift in Sources */,
+				A100000000000000000000E3 /* NewDMSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

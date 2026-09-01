@@ -232,7 +232,15 @@ async def mobile_login(request: Request, body: LoginRequest, db: DBSession):
     )
     user = result.scalar_one_or_none()
 
-    if not user or not user.hashed_password or not verify_password(body.password, user.hashed_password):
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    if not user.hashed_password:
+        # Account was created via Google (or another SSO) — no password is set.
+        raise HTTPException(
+            status_code=401,
+            detail="This account uses Google sign-in. Please use the 'Sign in with Google' button."
+        )
+    if not verify_password(body.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     if not user.is_active:
@@ -328,6 +336,7 @@ class OAuthTokenRequest(BaseModel):
 async def mobile_oauth_start(request: Request, provider: str):
     """Return the OAuth authorization URL for the native app to open in a browser."""
     from app.services.auth_providers import get_oauth_provider
+    from urllib.parse import urlencode
     import secrets
 
     oauth_provider = get_oauth_provider(provider)
@@ -335,15 +344,15 @@ async def mobile_oauth_start(request: Request, provider: str):
         raise HTTPException(status_code=400, detail=f"OAuth provider '{provider}' not available")
 
     state = secrets.token_urlsafe(32)
-    # For native apps, use a custom redirect URI that the app can intercept
-    redirect_uri = str(request.base_url).rstrip("/") + f"/mobile/v1/auth/oauth/{provider}/callback"
+    # Use settings.base_url so the URI is correct even behind a reverse proxy.
+    # request.base_url would return http://localhost:8000 in that case.
+    redirect_uri = settings.base_url.rstrip("/") + f"/mobile/v1/auth/oauth/{provider}/callback"
 
     params = oauth_provider.get_authorization_params(state)
     # Override the redirect_uri to point to our mobile callback
     params["redirect_uri"] = redirect_uri
-    auth_url = f"{oauth_provider.authorization_url}?" + "&".join(
-        f"{k}={v}" for k, v in params.items()
-    )
+    # urlencode is required — scope has spaces and redirect_uri has special chars
+    auth_url = f"{oauth_provider.authorization_url}?{urlencode(params)}"
 
     return OAuthStartResponse(auth_url=auth_url, state=state)
 
@@ -370,7 +379,7 @@ async def mobile_oauth_callback(
         raise HTTPException(status_code=400, detail=f"OAuth provider '{provider}' not available")
 
     # Override redirect_uri to match what we sent during authorization
-    redirect_uri = str(request.base_url).rstrip("/") + f"/mobile/v1/auth/oauth/{provider}/callback"
+    redirect_uri = settings.base_url.rstrip("/") + f"/mobile/v1/auth/oauth/{provider}/callback"
 
     try:
         tokens = await oauth_provider.exchange_code(code, redirect_uri=redirect_uri)
@@ -558,14 +567,17 @@ async def list_channels(workspace_id: int, user: MobileUser, db: DBSession):
         )
         cm = cm_result.scalar_one_or_none()
         unread = 0
-        if cm and cm.last_read_message_id:
+        if cm is not None:
+            unread_filters = [
+                Message.channel_id == ch.id,
+                Message.user_id.is_distinct_from(user.id),
+                Message.deleted_at == None,
+                Message.parent_id == None,  # top-level only, matches web sidebar
+            ]
+            if cm.last_read_message_id is not None:
+                unread_filters.append(Message.id > cm.last_read_message_id)
             unread_result = await db.execute(
-                select(func.count()).select_from(Message).where(
-                    Message.channel_id == ch.id,
-                    Message.id > cm.last_read_message_id,
-                    Message.user_id != user.id,
-                    Message.deleted_at == None,
-                )
+                select(func.count()).select_from(Message).where(*unread_filters)
             )
             unread = unread_result.scalar() or 0
 
@@ -669,14 +681,17 @@ async def list_conversations(
         )
         cm = cm_result.scalar_one_or_none()
         unread = 0
-        if cm and cm.last_read_message_id:
+        if cm is not None:
+            unread_filters = [
+                Message.channel_id == ch.id,
+                Message.user_id.is_distinct_from(user.id),
+                Message.deleted_at == None,
+                Message.parent_id == None,  # top-level only, matches web sidebar
+            ]
+            if cm.last_read_message_id is not None:
+                unread_filters.append(Message.id > cm.last_read_message_id)
             unread_result = await db.execute(
-                select(func.count()).select_from(Message).where(
-                    Message.channel_id == ch.id,
-                    Message.id > cm.last_read_message_id,
-                    Message.user_id != user.id,
-                    Message.deleted_at == None,
-                )
+                select(func.count()).select_from(Message).where(*unread_filters)
             )
             unread = unread_result.scalar() or 0
 
@@ -690,6 +705,15 @@ async def list_conversations(
 
         display_name = ch.display_name if hasattr(ch, "display_name") else ch.name
 
+        # Legacy Slack-synced channels are named "SLACK:<name>" without a
+        # BridgedChannel row — treat them as bridged so clients can group
+        # them into a Slack folder, and strip the prefix for display.
+        bridged_platform = bridge_map.get(ch.id)
+        if bridged_platform is None and ch.name.upper().startswith("SLACK:"):
+            bridged_platform = "slack"
+        if display_name.upper().startswith("SLACK:"):
+            display_name = display_name[6:].strip() or display_name
+
         previews.append(ConversationPreview(
             channel_id=ch.id,
             workspace_id=ch.workspace_id,
@@ -699,7 +723,7 @@ async def list_conversations(
             last_message=last_msg_resp,
             unread_count=unread,
             members=members,
-            bridged_platform=bridge_map.get(ch.id),
+            bridged_platform=bridged_platform,
         ))
 
     # Sort by last message time (most recent first)
@@ -777,7 +801,12 @@ async def list_messages(
     if after:
         query = query.where(Message.id > after)
 
-    query = query.order_by(Message.created_at.desc()).limit(limit)
+    # Order by id, not created_at: bridged/external messages can carry a
+    # backdated created_at from the original platform, which desynced the
+    # WHERE-by-id cursor from the ORDER-by-created_at result set and made
+    # messages render out of order (or drop out of the LIMIT window) in the
+    # native app.
+    query = query.order_by(Message.id.desc()).limit(limit)
     result = await db.execute(query)
     messages = list(reversed(result.scalars().all()))
 
@@ -1010,18 +1039,29 @@ async def mark_channel_read(
         )
     )
     cm = result.scalar_one_or_none()
+    # Get latest message ID (including thread replies)
+    latest = await db.execute(
+        select(Message.id)
+        .where(Message.channel_id == channel_id, Message.deleted_at == None)
+        .order_by(Message.id.desc())
+        .limit(1)
+    )
+    latest_id = latest.scalar_one_or_none()
+    if latest_id is None:
+        return
     if cm:
-        # Get latest message ID
-        latest = await db.execute(
-            select(Message.id)
-            .where(Message.channel_id == channel_id, Message.deleted_at == None)
-            .order_by(Message.id.desc())
-            .limit(1)
-        )
-        latest_id = latest.scalar_one_or_none()
-        if latest_id:
+        if (cm.last_read_message_id or 0) < latest_id:
             cm.last_read_message_id = latest_id
             await db.commit()
+    else:
+        # No membership row yet (e.g. public channel the user only reads) —
+        # create one so the read cursor persists and badges actually clear.
+        db.add(ChannelMembership(
+            channel_id=channel_id,
+            user_id=user.id,
+            last_read_message_id=latest_id,
+        ))
+        await db.commit()
 
 
 # ---------------------------------------------------------------------------

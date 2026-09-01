@@ -99,15 +99,21 @@ class Artifact(Base, TimestampMixin):
     
     # Task-specific
     assignee_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # Set instead of assignee_user_id when this artifact is assigned to an AI
+    # coding agent (Claude Code, Codex, etc.) rather than a human.
+    assignee_agent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("agent_integrations.id", ondelete="SET NULL"), nullable=True
+    )
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     priority: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    
+
     # Relationships
     workspace = relationship("Workspace")
     channel = relationship("Channel", back_populates="artifacts")
     product = relationship("Product", back_populates="artifacts")
     author = relationship("User", foreign_keys=[created_by])
     assignee = relationship("User", foreign_keys=[assignee_user_id])
+    assignee_agent = relationship("AgentIntegration", foreign_keys=[assignee_agent_id])
     source_message = relationship("Message")
     
     @classmethod

@@ -123,6 +123,23 @@ struct NativeCommunicatorHomeView: View {
                 .buttonStyle(.borderedProminent)
             }
 
+            Divider()
+                .overlay(Color.white.opacity(0.15))
+
+            Button {
+                Task { await store.signInWithGoogle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "globe")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Sign in with Google")
+                        .font(.system(size: 13, weight: .semibold))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(store.isLoading)
+
             Spacer(minLength: 0)
         }
         .padding(20)
@@ -161,6 +178,7 @@ struct NativeCommunicatorHomeView: View {
                             ConversationSectionView(
                                 kind: kind,
                                 isCollapsed: collapsedGroups.contains(kind),
+                                totalUnread: items.reduce(0) { $0 + $1.unreadCount },
                                 onToggle: {
                                     if collapsedGroups.contains(kind) {
                                         collapsedGroups.remove(kind)
@@ -299,13 +317,24 @@ struct NativeCommunicatorHomeView: View {
     }
 
     private func messagesPane(for conversation: CommunicatorConversation) -> some View {
-        ScrollView {
-            LazyVStack(spacing: 10) {
-                ForEach(store.messages) { message in
-                    MessageBubbleView(message: message)
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 10) {
+                    ForEach(store.messages) { message in
+                        MessageBubbleView(message: message)
+                    }
+                }
+                .padding(.vertical, 8)
+                Color.clear.frame(height: 1).id("messagesBottom")
+            }
+            .onAppear {
+                proxy.scrollTo("messagesBottom", anchor: .bottom)
+            }
+            .onChange(of: store.messages.count) { _ in
+                withAnimation(.easeOut(duration: 0.2)) {
+                    proxy.scrollTo("messagesBottom", anchor: .bottom)
                 }
             }
-            .padding(.vertical, 8)
         }
     }
 
@@ -341,6 +370,7 @@ struct NativeCommunicatorHomeView: View {
 private struct ConversationSectionView<Content: View>: View {
     let kind: CommunicatorConversationGroupKind
     let isCollapsed: Bool
+    let totalUnread: Int
     let onToggle: () -> Void
     @ViewBuilder let content: () -> Content
 
@@ -360,6 +390,15 @@ private struct ConversationSectionView<Content: View>: View {
                     Text(kind.title)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.white)
+
+                    if totalUnread > 0 {
+                        Text("\(totalUnread)")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(ForgeTheme.amber))
+                    }
 
                     Spacer(minLength: 0)
                 }
@@ -562,9 +601,7 @@ private struct MessageBubbleView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Text(message.body)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.white)
+                MessageBodyText(text: message.body)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(12)
@@ -578,6 +615,37 @@ private struct MessageBubbleView: View {
                     .stroke(ForgeTheme.glassBorder, lineWidth: 1)
             )
         }
+    }
+}
+
+private struct MessageBodyText: View {
+    let text: String
+
+    var body: some View {
+        Text(attributedBody)
+            .font(.system(size: 13))
+            .fixedSize(horizontal: false, vertical: true)
+            .tint(ForgeTheme.amber)
+    }
+
+    private var attributedBody: AttributedString {
+        var result = AttributedString(text)
+        result.foregroundColor = .white
+
+        guard let detector = try? NSDataDetector(
+            types: NSTextCheckingResult.CheckingType.link.rawValue
+        ) else { return result }
+
+        let nsLen = (text as NSString).length
+        let matches = detector.matches(in: text, range: NSRange(location: 0, length: nsLen))
+        for match in matches {
+            guard let url = match.url,
+                  let swiftRange = Range(match.range, in: text),
+                  let attrRange = Range(swiftRange, in: result) else { continue }
+            result[attrRange].link = url
+            result[attrRange].foregroundColor = ForgeTheme.amber
+        }
+        return result
     }
 }
 
